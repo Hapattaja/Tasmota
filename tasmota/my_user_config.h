@@ -1010,6 +1010,40 @@
   #define THERMOSTAT_TEMP_BAND_NO_PEAK_DET      1         // Default temperature band in thenths of degrees celsius within no peak will be detected
   #define THERMOSTAT_TIME_STD_DEV_PEAK_DET_OK   10        // Default standard deviation in minutes of the oscillation periods within the peak detection is successful
 
+// -- Hygrostat control ----------------------------
+//#define USE_HYGROSTAT
+  #define HYGROSTAT_CONTROLLER_OUTPUTS         1         // Number of outputs to be controlled independently
+  #define HYGROSTAT_SENSOR_NAME                ""        // Name of the local sensor to be used
+  #define HYGROSTAT_SENSOR_NUMBER              1         // Number of local sensors to be used
+  #define HYGROSTAT_RELAY_NUMBER               1         // Default output relay number for the first controller (+i for following ones)
+  #define HYGROSTAT_SWITCH_NUMBER              1         // Default input switch number for the first controller (+i for following ones)
+  #define HYGROSTAT_TIME_ALLOW_RAMPUP          300       // Default time after last target update to allow ramp-up controller phase in minutes
+  #define HYGROSTAT_TIME_RAMPUP_MAX            960       // Default time maximum ramp-up controller duration in minutes
+  #define HYGROSTAT_TIME_RAMPUP_CYCLE          30        // Default time ramp-up cycle in minutes
+  #define HYGROSTAT_TIME_SENS_LOST             30        // Maximum time w/o sensor update to set it as lost in minutes
+  #define HYGROSTAT_HUM_SENS_NUMBER            1         // Default humidity sensor number
+  #define HYGROSTAT_TIME_MANUAL_TO_AUTO        60        // Default time without input switch active to change from manual to automatic in minutes
+  #define HYGROSTAT_TIME_RESET                 12000     // Default reset time of the PI controller in seconds
+  #define HYGROSTAT_TIME_PI_CYCLE              30        // Default cycle time for the hygrostat controller in minutes
+  #define HYGROSTAT_TIME_MAX_ACTION            20        // Default maximum hygrostat time per cycle in minutes
+  #define HYGROSTAT_TIME_MIN_ACTION            4         // Default minimum hygrostat time per cycle in minutes
+  #define HYGROSTAT_TIME_MIN_TURNOFF_ACTION    3         // Default minimum turnoff time in minutes, below it the hygrostat will be held on
+  #define HYGROSTAT_PROP_BAND                  4         // Default proportional band of the PI controller in degrees celsius
+  #define HYGROSTAT_HUM_RESET_ANTI_WINDUP      8         // Default range where reset antiwindup is disabled, in tenths of percents
+  #define HYGROSTAT_HUM_HYSTERESIS             1         // Default range hysteresis for humidity PI controller, in tenths of percents
+  #define HYGROSTAT_HUM_TOODRY_PROTECT         40        // Default minimum humidity for frost protection, in tenths of percents
+  #define HYGROSTAT_HUM_RAMPUP_DELTA_IN        4         // Default minimum delta humidity to target to get into rampup mode, in tenths of percents
+  #define HYGROSTAT_HUM_RAMPUP_DELTA_OUT       2         // Default minimum delta humidity to target to get out of the rampup mode, in tenths of percents
+  #define HYGROSTAT_HUM_PI_RAMPUP_ACC_E        200       // Default accumulated error when switching from ramp-up controller to PI in hundreths of percents
+  #define HYGROSTAT_TIME_OUTPUT_DELAY          180       // Default output delay between state change and real actuation event (f.i. valve open/closed)
+  #define HYGROSTAT_HUM_INIT                   180       // Default init target humidity for the hygrostat controller
+  #define HYGROSTAT_TIME_MAX_OUTPUT_INCONSIST  3         // Default maximum time where the input and the outpus shall differ (for diagnostic) in minutes
+  #define HYGROSTAT_TIME_MAX_AUTOTUNE          21600     // Maximum time for the PI autotune function to complete in seconds
+  #define HYGROSTAT_DUTYCYCLE_AUTOTUNE         35        // Default duty cycle (in % over PI cycle time) for the step response of the autotune PI function
+  #define HYGROSTAT_PEAKNUMBER_AUTOTUNE        8         // Default number of peak humidity (max or min) to be used for the autotune PI function
+  #define HYGROSTAT_HUM_BAND_NO_PEAK_DET       1         // Default humidity band in thenths of percents within no peak will be detected
+  #define HYGROSTAT_TIME_STD_DEV_PEAK_DET_OK   10        // Default standard deviation in minutes of the oscillation periods within the peak detection is successful
+
 // -- PID and Timeprop ------------------------------ // Both together will add +12k1 code
 // #define use TIMEPROP                            // Add support for the timeprop feature (+9k1 code)
                                                    // For details on the configuration please see the header of tasmota/xdrv_48_timeprop.ino
