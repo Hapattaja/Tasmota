@@ -1964,7 +1964,7 @@ void HygrostatShow(uint8_t ctr_output, bool json)
  * Interface
 \*********************************************************************************************/
 
-bool Xdrv88(uint8_t function)
+bool Xdrv128(uint8_t function)
 {
   bool result = false;
   uint8_t ctr_output;
