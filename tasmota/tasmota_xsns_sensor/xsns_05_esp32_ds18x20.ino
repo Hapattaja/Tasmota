@@ -226,6 +226,17 @@ void Ds18x20EverySecond(void) {
   }
 }
 
+#ifdef USE_SENSORFILTER
+float Ds18x20GetFilteredTemperature(const char *address, const float t)
+{
+  sensor_filter_t* filter = SensorFilter_GetFilter((String)address);
+  if (filter != nullptr) {
+    return t + filter->offset;
+  }
+  return t;
+}
+#endif // USE_SENSORFILTER
+
 void Ds18x20Show(bool json) {
   float t;
 
@@ -234,6 +245,13 @@ void Ds18x20Show(bool json) {
     if (Ds18x20Read(i, t)) {           // Check if read failed
       Ds18x20Name(i);
 
+#ifdef USE_SENSORFILTER  
+      char address[17];
+      for (uint32_t j = 0; j < 6; j++) {
+        sprintf(address+2*j, "%02X", ds18x20_sensor[ds18x20_sensor[i].index].address[6-j]);  // Skip sensor type and crc
+      }
+      t = Ds18x20GetFilteredTemperature(address, t);
+#endif  // USE_SENSORFILTER
       if (json) {
         if (Settings->flag5.ds18x20_mean) {
           if ((0 == TasmotaGlobal.tele_period) && ds18x20_sensor[i].numread) {
@@ -241,10 +259,12 @@ void Ds18x20Show(bool json) {
             ds18x20_sensor[i].numread = 0;
           }
         }
+#ifndef USE_SENSORFILTER
         char address[17];
         for (uint32_t j = 0; j < 6; j++) {
           sprintf(address+2*j, "%02X", ds18x20_sensor[ds18x20_sensor[i].index].address[6-j]);  // Skip sensor type and crc
         }
+#endif // USE_SENSORFILTER
         ResponseAppend_P(PSTR(",\"%s\":{\"" D_JSON_ID "\":\"%s\",\"" D_JSON_TEMPERATURE "\":%*_f}"),
           DS18X20Data.name, address, Settings->flag2.temperature_resolution, &t);
         dsxflg++;
