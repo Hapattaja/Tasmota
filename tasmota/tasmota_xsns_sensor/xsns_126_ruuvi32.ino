@@ -252,19 +252,19 @@ int Ruuvi32_AdvertismentCallback(BLE_ESP32::ble_advertisment_t *pStruct)
 
 void Ruuvi32_SensorListResp()
 {
-  Response_P(PSTR("{\"Ruuvi\":{"));
+  Response_P(PSTR("{\"Ruuvi\":["));
 
   for (uint32_t i = 0; i < RuuviSensors.size(); i++) {
-    if (i > 0){
+    if (i > 0) {
       ResponseAppend_P(PSTR(","));
     }
     ruuvi_sensor_t* sensor = &(RuuviSensors[i]);
-    ResponseAppend_P(PSTR("\"mac\":\"%02x%02x%02x%02x%02x%02x\", \"name\":\"%s\", \"temperature_offset\":%f, \"humidity_offset\":%f, \"pressure_offset\":%f"),
+    ResponseAppend_P(PSTR("{\"mac\":\"%02x%02x%02x%02x%02x%02x\", \"name\":\"%s\", \"temperature_offset\":%f, \"humidity_offset\":%f, \"pressure_offset\":%f}"),
       sensor->MAC[0], sensor->MAC[1], sensor->MAC[2], sensor->MAC[3], sensor->MAC[4], sensor->MAC[5],
       sensor->name,
       sensor->temperature_offset, sensor->humidity_offset, sensor->pressure_offset);
   }
-  ResponseAppend_P(PSTR("}}"));
+  ResponseAppend_P(PSTR("]}"));
 }
 
 /*********************************************************************************************\
@@ -422,7 +422,8 @@ void Ruuvi32_ResponseAppendSensor(ruuvi_sensor_t *sensor)
   ResponseAppend_P(PSTR("}"));
 }
 
-void Ruuvi32_UpdateSensorsState() {
+void Ruuvi32_UpdateSensorsState()
+{
   for (int i = RuuviSensors.size()-1; i >= 0; i--) {
     ruuvi_sensor_t* sensor = &(RuuviSensors[i]);
     if (sensor->is_present && !BLE_ESP32::devicePresent(sensor->MAC)) {
@@ -432,7 +433,8 @@ void Ruuvi32_UpdateSensorsState() {
   }
 }
 
-void Ruuvi32_ResponseAppend(void) {
+void Ruuvi32_ResponseAppend(void)
+{
   Ruuvi32_UpdateSensorsState();
 
   for (uint32_t i = 0; i < RuuviSensors.size(); i++) {
