@@ -11,11 +11,12 @@
 // Commands
 #define D_CMND_RUUVI_SET "RuuviSet"
 #define D_CMND_RUUVI_CLEAR "RuuviClear"
+#define D_CMND_RUUVI_DEBUG "RuuviDebug"
 
-const char kRuuviCommands[] PROGMEM = "|" D_CMND_RUUVI_SET "|" D_CMND_RUUVI_CLEAR;
-void (* const RuuviCommand[])(void) PROGMEM = { &CmndRuuviSet, &CmndRuuviClear };
+const char kRuuviCommands[] PROGMEM = "|" D_CMND_RUUVI_SET "|" D_CMND_RUUVI_CLEAR "|" D_CMND_RUUVI_DEBUG;
+void (* const RuuviCommand[])(void) PROGMEM = { &CmndRuuviSet, &CmndRuuviClear, &CmndRuuviDebug };
 
-bool RuuviDebugMode = true;
+uint8_t RuuviDebugMode = 0;
 
 struct ruuvi_sensor_data_t {
   int8_t RSSI;
@@ -36,17 +37,15 @@ struct ruuvi_sensor_data_t {
 
 struct ruuvi_sensor_t {
   uint8_t MAC[6];
-  char name[RUUVI_NAME_MAXLEN];
+  char name[RUUVI_NAME_MAXLEN + 1] = "";
   float temperature_offset = 0;
   float humidity_offset = 0;
   float pressure_offset = 0;
   ruuvi_sensor_data_t data;
   bool is_present = 0;
-  bool sent = 0;
 };
 
 std::vector<ruuvi_sensor_t> RuuviSensors;
-SemaphoreHandle_t ruuviSensorSlotMutex = (SemaphoreHandle_t) nullptr;
 
 int Ruuvi32_ScanCompleteCallback(NimBLEScanResults results);
 int Ruuvi32_AdvertismentCallback(BLE_ESP32::ble_advertisment_t *pStruct);
@@ -133,30 +132,38 @@ ruuvi_sensor_t* Ruuvi32_GetSensor(const uint8_t mac[6])
     for (uint32_t i = 0; i < RuuviSensors.size(); i++) {
         if(memcmp(mac, RuuviSensors[i].MAC, 6) == 0) {
             ruuvi_sensor_t* sensor = &(RuuviSensors[i]);
-            AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("Ruuvi: Got sensor %02x%02x%02x%02x%02x%02x"), sensor->MAC[0], sensor->MAC[1], sensor->MAC[2], sensor->MAC[3], sensor->MAC[4], sensor->MAC[5]);
+            if (RuuviDebugMode > 0) {
+              AddLog(LOG_LEVEL_DEBUG, PSTR("Ruuvi: Got sensor %02x%02x%02x%02x%02x%02x"), sensor->MAC[0], sensor->MAC[1], sensor->MAC[2], sensor->MAC[3], sensor->MAC[4], sensor->MAC[5]);
+            }
             return sensor;
         }
     }
     return nullptr;
 }
 
-// Adds or updates a new sensor
+// Adds or updates a sensor
 uint32_t Ruuvi32_AddOrUpdateSensor(ruuvi_sensor_t* sensor)
 {
-    if (RuuviDebugMode) {
+    if (RuuviDebugMode > 0) {
       AddLog(LOG_LEVEL_DEBUG,PSTR("Ruuvi: AddOrUpdateSensor"));
     }
 
     for (uint32_t i = 0; i < RuuviSensors.size(); i++) {
         if(memcmp(sensor->MAC, RuuviSensors[i].MAC, 6) == 0) {
-            AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("Ruuvi: Updated sensor %02x%02x%02x%02x%02x%02x"), sensor->MAC[0], sensor->MAC[1], sensor->MAC[2], sensor->MAC[3], sensor->MAC[4], sensor->MAC[5]);
+            if (RuuviDebugMode > 0) {
+              AddLog(LOG_LEVEL_DEBUG, PSTR("Ruuvi: Updated sensor %02x%02x%02x%02x%02x%02x"), sensor->MAC[0], sensor->MAC[1], sensor->MAC[2], sensor->MAC[3], sensor->MAC[4], sensor->MAC[5]);
+            }
             RuuviSensors[i] = *sensor;
             return i;
         }
     }
 
     RuuviSensors.push_back(*sensor);
-    AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("Ruuvi: Added sensor %02x%02x%02x%02x%02x%02x"), sensor->MAC[0], sensor->MAC[1], sensor->MAC[2], sensor->MAC[3], sensor->MAC[4], sensor->MAC[5]);
+
+    if (RuuviDebugMode > 0) {
+      AddLog(LOG_LEVEL_DEBUG, PSTR("Ruuvi: Added sensor %02x%02x%02x%02x%02x%02x"), sensor->MAC[0], sensor->MAC[1], sensor->MAC[2], sensor->MAC[3], sensor->MAC[4], sensor->MAC[5]);
+    }
+
     return RuuviSensors.size() - 1;
 }
 
@@ -167,27 +174,37 @@ uint32_t Ruuvi32_AddOrUpdateSensor(ruuvi_sensor_t* sensor)
 
 int Ruuvi32_ScanCompleteCallback(NimBLEScanResults results){
   // we actually don't need to do anything here....
-  if (BLE_ESP32::BLEDebugMode > 0) AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("Ruuvi32: Scan completed"));
+  if (BLE_ESP32::BLEDebugMode > 0) {
+    AddLog(LOG_LEVEL_DEBUG, PSTR("Ruuvi32: Scan completed"));
+  }
   return 0;
 }
 
 int Ruuvi32_AdvertismentCallback(BLE_ESP32::ble_advertisment_t *pStruct)
 {
   if (BLE_ESP32::BLEDebugMode > 0) {
-    AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("Ruuvi: Advertisement callback"));
+    if (RuuviDebugMode > 0) {
+      AddLog(LOG_LEVEL_DEBUG, PSTR("Ruuvi: Advertisement callback"));
+    }
   }
 
   const uint8_t *addr = pStruct->addr;
 
-  AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("Ruuvi: Found device (%02x%02x%02x%02x%02x%02x)"), addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+  if (RuuviDebugMode > 0) {
+    AddLog(LOG_LEVEL_DEBUG, PSTR("Ruuvi: Found device (%02x%02x%02x%02x%02x%02x)"), addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+  }
 
   ruuvi_sensor_t* sensor = Ruuvi32_GetSensor(addr);
   if (sensor == nullptr) {
-    AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("Ruuvi: Sensor is not pre-defined."));
+    if (RuuviDebugMode > 0) {
+      AddLog(LOG_LEVEL_DEBUG, PSTR("Ruuvi: Sensor is not pre-defined."));
+    }
     return 0;
   }
 
-  AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("Ruuvi: Pre-defined sensor found."));
+  if (RuuviDebugMode > 0) {
+    AddLog(LOG_LEVEL_DEBUG, PSTR("Ruuvi: Pre-defined sensor found."));
+  }
 
   // // const char *alias = BLE_ESP32::getAlias(addr);
   //     // if (!alias || !(*alias)){
@@ -196,6 +213,10 @@ int Ruuvi32_AdvertismentCallback(BLE_ESP32::ble_advertisment_t *pStruct)
 
   BLEAdvertisedDevice *advertisedDevice = pStruct->advertisedDevice;
   if (!advertisedDevice->haveManufacturerData()){
+    if (RuuviDebugMode > 0) {
+      AddLog(LOG_LEVEL_DEBUG, PSTR("Ruuvi: No manufacturer data found."));
+    }
+
     return 0;
   }
 
@@ -209,23 +230,28 @@ int Ruuvi32_AdvertismentCallback(BLE_ESP32::ble_advertisment_t *pStruct)
         ruuvi_sensor_data_t data;
         if (Ruuvi32_ParseData(manufacturerData + 2, manufacturerDataLen - 2, data)) {
 
-          AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("Ruuvi: Sensor is recognized as Ruuvi sensor."));
+          if (RuuviDebugMode > 0) {
+            AddLog(LOG_LEVEL_DEBUG, PSTR("Ruuvi: Sensor is recognized as Ruuvi sensor."));
+          }
 
   	      data.RSSI = pStruct->RSSI;
           sensor->data = data;
           sensor->is_present = 1;
 
-          AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("%s: MAC: %02x%02x%02x%02x%02x%02x Temperature: %f °C Humidity: %f %% Pressure: %f hPa Tx power: %f Battery: %d V RSSI: %d"),
+          if (RuuviDebugMode > 0) {
+            AddLog(LOG_LEVEL_DEBUG, PSTR("%s: MAC: %02x%02x%02x%02x%02x%02x Temperature: %f °C Humidity: %f %% Pressure: %f hPa Tx power: %f Battery: %d V RSSI: %d"),
                 "Ruuvi",
                 sensor->MAC[0], sensor->MAC[1], sensor->MAC[2], sensor->MAC[3], sensor->MAC[4], sensor->MAC[5],
                 data.temperature, data.humidity, data.pressure, data.tx_power, data.battery_voltage, data.RSSI);
+          }
       }
     }
   }
   return 0;
 }
 
-void Ruuvi32_SensorListResp() {
+void Ruuvi32_SensorListResp()
+{
   Response_P(PSTR("{\"Ruuvi\":{"));
 
   for (uint32_t i = 0; i < RuuviSensors.size(); i++) {
@@ -241,34 +267,19 @@ void Ruuvi32_SensorListResp() {
   ResponseAppend_P(PSTR("}}"));
 }
 
-// uint32_t Ruuvi32_HexStringToBytes(const char* s, uint8_t* bytes, uint32_t num)
-// {
-//   uint32_t end = strlen(s);
-//   if (end > num * 2) {
-//       return false;
-//   }
-//   uint32_t i = 0;
-//   memset(bytes, 0, end / 2);
-//   while (i < end) {
-//     char c = s[i];
-//     uint8_t value = 0;
-//     if (c >= '0' && c <= '9')
-//       value = (c - '0');
-//     else if (c >= 'A' && c <= 'F')
-//       value = (10 + (c - 'A'));
-//     bytes[(i / 2)] += value << (((i + 1) % 2) * 4);
-//     i++;
-//   }
-//   return i / 2;
-// }
-
 /*********************************************************************************************\
  * Commands
 \*********************************************************************************************/
 
+void CmndRuuviDebug(void){
+  if (XdrvMailbox.payload >= 0) {
+    RuuviDebugMode = XdrvMailbox.payload;
+  }
+  ResponseCmndNumber(RuuviDebugMode);
+}
+
 void CmndRuuviClear()
 {
-  // TODO: Concurrency?
   RuuviSensors.clear();
   Ruuvi32_SensorListResp();
 }
@@ -276,7 +287,9 @@ void CmndRuuviClear()
 void CmndRuuviSet()
 {
   int op = XdrvMailbox.index;
-  AddLog(LOG_LEVEL_DEBUG,PSTR("Ruuvi: RuuviSet %d %s"), op, XdrvMailbox.data);
+  if (RuuviDebugMode > 0) {
+    AddLog(LOG_LEVEL_DEBUG,PSTR("Ruuvi: RuuviSet %d %s"), op, XdrvMailbox.data);
+  }
 
   if (XdrvMailbox.data_len > 0)
   {
@@ -288,7 +301,7 @@ void CmndRuuviSet()
     }
 
     JsonParserToken val = root[PSTR("mac")];
-    if (!val) {
+    if (!val) {      
       ResponseCmndChar_P(PSTR("missingmac"));
       return;
     }
@@ -297,38 +310,41 @@ void CmndRuuviSet()
 
     const char *mac_string = val.getStr();
     if (BLE_ESP32::fromHex(sensor.MAC, mac_string, sizeof(sensor.MAC)) != 6) {
-    //if (Ruuvi32_HexStringToBytes(mac_string, sensor.MAC, sizeof(sensor.MAC)) != 6) {
-      if (RuuviDebugMode) {
-        AddLog(LOG_LEVEL_ERROR,PSTR("Ruuvi: RuuviSet invalid MAC: %s"), mac_string);
-      }
       ResponseCmndChar("invalidmac");
       return;
     }
     val = root[PSTR("name")];
     if (val) {
-      if (RuuviDebugMode) {
+      if (RuuviDebugMode > 0) {
         AddLog(LOG_LEVEL_DEBUG,PSTR("Ruuvi: RuuviSet: Copying name to sensor."), sizeof(sensor.name));
       }
       strncpy(sensor.name, val.getStr(), sizeof(sensor.name));
       sensor.name[sizeof(sensor.name) - 1] = 0;
-      if (RuuviDebugMode) {
+      if (RuuviDebugMode > 0) {
         AddLog(LOG_LEVEL_DEBUG,PSTR("Ruuvi: RuuviSet: Sensor name = %s"), sensor.name);
       }
     }
+
     val = root[PSTR("temperature_offset")];
     if (val) {
       sensor.temperature_offset = val.getFloat();
-      if (RuuviDebugMode) {
-        AddLog(LOG_LEVEL_DEBUG,PSTR("Ruuvi: RuuviSet: Temperature offset parsed (%f)"), sensor.temperature_offset);
+      if (RuuviDebugMode > 0) {
+        AddLog(LOG_LEVEL_DEBUG,PSTR("Ruuvi: RuuviSet: Temperature offset parsed (%f)."), sensor.temperature_offset);
       }
     }
     val = root[PSTR("humidity_offset")];
     if (val) {
       sensor.humidity_offset = val.getFloat();
+      if (RuuviDebugMode > 0) {
+        AddLog(LOG_LEVEL_DEBUG,PSTR("Ruuvi: RuuviSet: Humidity offset parsed (%f)."), sensor.humidity_offset);
+      }
     }
     val = root[PSTR("pressure_offset")];
     if (val) {
       sensor.pressure_offset = val.getFloat();
+      if (RuuviDebugMode > 0) {
+        AddLog(LOG_LEVEL_DEBUG,PSTR("Ruuvi: RuuviSet: Pressure offset parsed (%f)"), sensor.pressure_offset);
+      }
     }
 
     if (RuuviDebugMode) {
@@ -425,7 +441,9 @@ void Ruuvi32_ResponseAppend(void) {
     {
       ResponseAppend_P(PSTR(","));
       Ruuvi32_ResponseAppendSensor(sensor);
-      AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("Ruuvi: Sent %02x%02x%02x%02x%02x%02x"), sensor->MAC[0], sensor->MAC[1], sensor->MAC[2], sensor->MAC[3], sensor->MAC[4], sensor->MAC[5]);
+      if (RuuviDebugMode > 0) {
+        AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("Ruuvi: Response %02x%02x%02x%02x%02x%02x"), sensor->MAC[0], sensor->MAC[1], sensor->MAC[2], sensor->MAC[3], sensor->MAC[4], sensor->MAC[5]);
+      }
     }
   }
 }
