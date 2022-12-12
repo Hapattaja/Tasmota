@@ -1,5 +1,5 @@
 tasks:
-  - command: git config --global user.email "5112707+Hapattaja@users.noreply.github.com"git pu
+  - command: git config --global user.email "5112707+Hapattaja@users.noreply.github.com"
   - command: pip3 install -U platformio && platformio run
 
 image:
