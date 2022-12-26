@@ -1915,10 +1915,12 @@ void HygrostatShow(uint8_t ctr_output, bool json)
 {
   if (json) {
     float f_target_hum = Hygrostat[ctr_output].hum_target_level / 10.0f;
+    float f_measured_hum = Hygrostat[ctr_output].hum_measured / 10.0f;
     ResponseAppend_P(PSTR(",\"Hygrostat%i\":{"), ctr_output);
     ResponseAppend_P(PSTR("%s\"%s\":%i"), "", D_CMND_HYGROSTATMODESET, Hygrostat[ctr_output].status.hygrostat_mode);
     ResponseAppend_P(PSTR("%s\"%s\":%2_f"), ",", D_CMND_HUMTARGETSET, &f_target_hum);
     ResponseAppend_P(PSTR("%s\"%s\":%i"), ",", D_CMND_CTRDUTYCYCLEREAD, HygrostatGetDutyCycle(ctr_output));
+    ResponseAppend_P(PSTR("%s\"%s\":%2_f"), ",", D_CMND_HUMMEASUREDSET, &f_measured_hum);
     ResponseJsonEnd();
     return;
   }
