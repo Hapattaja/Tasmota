@@ -468,7 +468,7 @@ void Ruuvi32_Init() {
  * constants
 \*********************************************************************************************/
 
-bool Xsns126(uint8_t function)
+bool Xsns126(uint32_t function)
 {
   bool result = false;
 

@@ -131,7 +131,7 @@ void CmndSensorFilterSet()
  * Interface
 \*********************************************************************************************/
 
-bool Xdrv127(uint8_t function)
+bool Xdrv127(uint32_t function)
 {
   bool result = false;
 
