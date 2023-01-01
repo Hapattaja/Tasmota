@@ -9,7 +9,7 @@ SpotHinta API client for Tasmota https://spot-hinta.fi/JustNow
 
 RULE1
 ON Time#Initialized DO backlog event SpotHintaCheck ENDON
-ON event#SpotHintaCheck DO backlog SpotHintaJustNowRank {"rank":5,"price":2,"backup":[2,3,4,5,20,21] } ENDON
+ON event#SpotHintaCheck DO backlog SpotHintaJustNowRank {"rank":5,"price":3,"backup":[2,3,4,5,20,21]} ENDON
 ON SpotHintaJustNowRank#result>=0 DO power1 %value% ENDON
 ON SpotHintaJustNowRank#status<0 DO RuleTimer1 600 ENDON
 ON time#minute|60 DO backlog event SpotHintaCheck;RuleTimer1 60 ENDON
@@ -19,10 +19,13 @@ ON rules#Timer=1 DO event SpotHintaCheck ENDON
 Backlog0 Timezone 99; TimeStd 0,0,10,1,4,120; TimeDst 0,0,3,1,3,180
 
 # Disable saving  power state and use after restart:
-SetOption 0 0
+SetOption0 0
 
 # Switch relay(s) to their last saved state:
 PowerOnState 3
+
+# Tasmota devices configured for native discovery:
+SetOption19 0
 
 # For testing without actually do the request to API, use result parameter in settings, for example:
 SpotHintaJustNowRank {"rank":5,"price":5,"backup":[2,3,4,5,20,21],"result":0}
