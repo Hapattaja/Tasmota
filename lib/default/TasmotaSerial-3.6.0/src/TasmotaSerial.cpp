@@ -46,7 +46,6 @@ static uint32_t tasmota_serial_uart_bitmap = 0;      // Assigned UARTs
 
 TasmotaSerial::TasmotaSerial(int receive_pin, int transmit_pin, int hardware_fallback, int nwmode, int buffer_size) {
   m_valid = false;
-  m_tx_enable_valid = false;
   m_hardserial = false;
   m_hardswap = false;
   m_overflow = false;
@@ -56,6 +55,7 @@ TasmotaSerial::TasmotaSerial(int receive_pin, int transmit_pin, int hardware_fal
   serial_buffer_size = buffer_size;
   m_rx_pin = receive_pin;
   m_tx_pin = transmit_pin;
+  m_tx_enable_pin = -1;
   m_in_pos = 0;
   m_out_pos = 0;
 #ifdef ESP8266
@@ -134,12 +134,9 @@ bool TasmotaSerial::isValidGPIOpin(int pin) {
 
 void TasmotaSerial::setTransmitEnablePin(int tx_enable_pin) {
   if ((tx_enable_pin > -1) && isValidGPIOpin(tx_enable_pin)) {
-    m_tx_enable_valid = true;
     m_tx_enable_pin = tx_enable_pin;
     pinMode(m_tx_enable_pin, OUTPUT);
     digitalWrite(m_tx_enable_pin, LOW);
-  } else {
-    m_tx_enable_valid = false;
   }
 }
 
@@ -231,7 +228,7 @@ bool TasmotaSerial::begin(uint32_t speed, uint32_t config) {
 #ifdef ESP32
     if (TSerial == nullptr) {      // Allow for dynamic change in baudrate or config
       if (freeUart()) {            // We prefer UART1 and UART2 and keep UART0 for debugging
-#ifdef ARDUINO_USB_CDC_ON_BOOT
+#if ARDUINO_USB_MODE
         TSerial = new HardwareSerial(m_uart);
 #else
         if (0 == m_uart) {
@@ -242,7 +239,7 @@ bool TasmotaSerial::begin(uint32_t speed, uint32_t config) {
         } else {
           TSerial = new HardwareSerial(m_uart);
         }
-#endif  // ARDUINO_USB_CDC_ON_BOOT
+#endif  // ARDUINO_USB_MODE
         if (serial_buffer_size > 256) {  // RX Buffer can't be resized when Serial is already running (HardwareSerial.cpp)
           TSerial->setRxBufferSize(serial_buffer_size);
         }
@@ -425,7 +422,7 @@ void IRAM_ATTR TasmotaSerial::_fast_write(uint8_t b) {
 size_t TasmotaSerial::write(uint8_t b) {
   if (!m_hardserial && (-1 == m_tx_pin)) { return 0; }
 
-  if (m_tx_enable_valid) {
+  if (m_tx_enable_pin > -1) {
     digitalWrite(m_tx_enable_pin, HIGH);
   }
   size_t size = 0;
@@ -462,8 +459,8 @@ size_t TasmotaSerial::write(uint8_t b) {
     }
     size = 1;
   }
-  if (m_tx_enable_valid) {
-    delay(1);
+  if (m_tx_enable_pin > -1) {
+    flush();  // Must wait for all data sent
     digitalWrite(m_tx_enable_pin, LOW);
   }
   return size;

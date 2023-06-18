@@ -89,7 +89,8 @@ Note: `minimal` variant is not listed as it shouldn't be used outside of the [up
 | USE_BL09XX                | - | x / x | x | x | - | - |
 | USE_TELEINFO              | - | - / - | - | - | - | - |
 | USE_IEM3000               | - | - / - | - | - | - | - |
-| USE_WE517                 | - | - / - | - | - | - | - |
+| USE_WE517                 | - | - / x | - | - | - | - |
+| USE_MODBUS_ENERGY         | - | - / x | - | - | - | - |
 |                           |   |       |   |   |   |   |
 | USE_ADC_VCC               | x | - / - | - | - | x | - |
 | USE_COUNTER               | - | x / x | x | x | - | x |
@@ -117,10 +118,13 @@ Note: `minimal` variant is not listed as it shouldn't be used outside of the [up
 | USE_MGS                   | - | - / x | - | x | - | - |
 | USE_SGP30                 | - | - / x | - | x | - | - |
 | USE_SGP40                 | - | - / x | - | x | - | - |
+| USE_SEN5X                 | - | - / x | - | x | - | - |
 | USE_SI1145                | - | - / - | - | - | - | - |
 | USE_LM75AD                | - | - / x | - | x | - | - |
 | USE_APDS9960              | - | - / - | - | - | - | - |
 | USE_MCP230xx              | - | - / - | - | - | - | - |
+| USE_MCP23XXX_DRV          | - | - / - | - | - | - | - |
+| USE_PCA9632               | - | - / - | - | - | - | - |
 | USE_PCA9685               | - | - / - | - | - | - | - |
 | USE_MPR121                | - | - / - | - | - | - | - |
 | USE_CCS811                | - | - / - | - | x | - | - |
@@ -140,6 +144,9 @@ Note: `minimal` variant is not listed as it shouldn't be used outside of the [up
 | USE_CHIRP                 | - | - / - | - | - | - | - |
 | USE_PAJ7620               | - | - / - | - | - | - | - |
 | USE_PCF8574               | - | - / - | - | - | - | - |
+| USE_PMSA003I              | - | - / - | - | - | - | - |
+| USE_LOX_O2                | - | - / x | - | x | - | - |
+| USE_GDK101                | - | - / - | - | - | - | - |
 |                           |   |       |   |   |   |   |
 | Feature or Sensor         | l | t     | k | s | i | d | Remarks
 | USE_HIH6                  | - | - / x | - | x | - | - |
@@ -246,6 +253,7 @@ Note: `minimal` variant is not listed as it shouldn't be used outside of the [up
 | USE_DISPLAY_ST7789        | - | - / - | - | - | - | x |
 | USE_DISPLAY_TM1637        | - | - / - | - | - | - | x |
 | USE_DISPLAY_TM1621_SONOFF | - | - / x | - | - | - | - |
+| USE_DISPLAY_TM1650        | - | - / - | - | - | - | - |
 |                           |   |       |   |   |   |   |
 | USE_FT5206                | - | - / - | - | - | - | - |
 | USE_FTC532                | - | - / - | - | - | - | - |
@@ -264,5 +272,6 @@ Note: `minimal` variant is not listed as it shouldn't be used outside of the [up
 | USE_SHELLY_PRO            |   |   / x |   |   |   |   |
 | USE_DALI                  |   |   / - |   |   |   |   |
 | USE_DINGTIAN_RELAY        |   |   / - |   |   |   |   |
+| USE_MATTER_DEVICE         |   |   / - |   |   |   |   | See SetOption151
 
 * USE_MQTT_TLS is enabled by default in every ESP32 variants

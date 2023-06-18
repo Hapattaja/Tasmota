@@ -24,6 +24,9 @@
 
 #include <berry.h>
 #include "berry_tasmota.h"
+#ifdef USE_MATTER_DEVICE
+  #include "berry_matter.h"
+#endif
 #include "be_vm.h"
 #include "ZipReadFS.h"
 #include "ccronexpr.h"
@@ -798,6 +801,9 @@ bool Xdrv52(uint32_t function)
       break;
     case FUNC_WEB_SENSOR:
       callBerryEventDispatcher(PSTR("web_sensor"), nullptr, 0, nullptr);
+      break;
+    case FUNC_WEB_GET_ARG:
+      callBerryEventDispatcher(PSTR("web_get_arg"), nullptr, 0, nullptr);
       break;
 
     case FUNC_JSON_APPEND:

@@ -99,7 +99,7 @@ tXdrv87Settings Xdrv87Settings;
 
 /*********************************************************************************************/
 
-void Xdrv87SettingsLoad(void) {
+void Xdrv87SettingsLoad(bool erase) {
   // *** Start init default values in case file is not found ***
   memset(&Xdrv87Settings, 0x00, sizeof(tXdrv87Settings));
   Xdrv87Settings.version = XDRV_87_VERSION;
@@ -115,7 +115,10 @@ void Xdrv87SettingsLoad(void) {
   char filename[20];
   // Use for drivers:
   snprintf_P(filename, sizeof(filename), PSTR(TASM_FILE_DRIVER), XDRV_87);
-  if (TfsLoadFile(filename, (uint8_t*)&Xdrv87Settings, sizeof(tXdrv87Settings))) {
+  if (erase) {
+    TfsDeleteFile(filename);  // Use defaults
+  }
+  else if (TfsLoadFile(filename, (uint8_t*)&Xdrv87Settings, sizeof(tXdrv87Settings))) {
     if (Xdrv87Settings.version != XDRV_87_VERSION) {      // Fix version dependent changes
 
       // *** Start fix possible setting deltas ***
@@ -130,7 +133,8 @@ void Xdrv87SettingsLoad(void) {
       Xdrv87SettingsSave();
     }
     AddLog(LOG_LEVEL_INFO, PSTR("CFG: XDRV87 loaded from file"));
-  } else {
+  }
+  else {
     // File system not ready: No flash space reserved for file system
     AddLog(LOG_LEVEL_DEBUG, PSTR("CFG: XDRV87 Use defaults as file system not ready or file not found"));
   }
@@ -298,7 +302,7 @@ void TM1621PreInit(void) {
   pinMode(Tm1621.pin_wr, OUTPUT);
   digitalWrite(Tm1621.pin_wr, 1);
 
-  Xdrv87SettingsLoad();
+  Xdrv87SettingsLoad(0);
 
   Tm1621.state = 200;
 
@@ -429,13 +433,13 @@ void TM1621Show(void) {
 
   if (TM1621_POWR316D == Tm1621.device) {
     if (0 == Tm1621.display_rotate) {
-      ext_snprintf_P(Tm1621.row[0], sizeof(Tm1621.row[0]), PSTR("%1_f"), &Energy.voltage[0]);
-      ext_snprintf_P(Tm1621.row[1], sizeof(Tm1621.row[1]), PSTR("%1_f"), &Energy.current[0]);
+      ext_snprintf_P(Tm1621.row[0], sizeof(Tm1621.row[0]), PSTR("%1_f"), &Energy->voltage[0]);
+      ext_snprintf_P(Tm1621.row[1], sizeof(Tm1621.row[1]), PSTR("%1_f"), &Energy->current[0]);
       Tm1621.voltage = true;
       Tm1621.display_rotate = 1;
     } else {
-      ext_snprintf_P(Tm1621.row[0], sizeof(Tm1621.row[0]), PSTR("%1_f"), &Energy.total[0]);
-      ext_snprintf_P(Tm1621.row[1], sizeof(Tm1621.row[1]), PSTR("%1_f"), &Energy.active_power[0]);
+      ext_snprintf_P(Tm1621.row[0], sizeof(Tm1621.row[0]), PSTR("%1_f"), &Energy->total[0]);
+      ext_snprintf_P(Tm1621.row[1], sizeof(Tm1621.row[1]), PSTR("%1_f"), &Energy->active_power[0]);
       Tm1621.kwh = true;
       Tm1621.display_rotate = 0;
     }
@@ -459,6 +463,7 @@ void TM1621Show(void) {
             temperature = TM1621GetTemperatureValues(Tm1621.temp_sensors_rotate);
             ext_snprintf_P(Tm1621.row[1], sizeof(Tm1621.row[1]), PSTR("%d"), Tm1621.temp_sensors_rotate);
           } else {
+            temperature = TM1621GetTemperatureValues(1);  // Fix in case GlobalTemp is set wrong (#17694)
             float temperature2 = TM1621GetTemperatureValues(2);
             ext_snprintf_P(Tm1621.row[1], sizeof(Tm1621.row[1]), PSTR("%1_f"), &temperature2);
           }
@@ -576,6 +581,9 @@ bool Xdrv87(uint32_t function) {
     switch (function) {
       case FUNC_EVERY_SECOND:
         TM1621EverySecond();
+        break;
+      case FUNC_RESET_SETTINGS:
+        Xdrv87SettingsLoad(1);
         break;
       case FUNC_SAVE_SETTINGS:
         Xdrv87SettingsSave();

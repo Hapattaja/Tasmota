@@ -28,7 +28,7 @@
  * Use online command StateText to translate ON, OFF, HOLD and TOGGLE.
  * Use online command Prefix to translate cmnd, stat and tele.
  *
- * Updated until v11.1.0.3 - Last update 17.05.2022
+ * Updated until v12.3.1.4 - Last update 19.01.2023
 \*********************************************************************/
 
 //#define LANGUAGE_MODULE_NAME         // Enable to display "Module Generic" (ie Spanish), Disable to display "Generic Module" (ie English)
@@ -51,6 +51,7 @@
 #define D_DECIMAL_SEPARATOR ","
 
 // Common
+#define D_ABSOLUTE_HUMIDITY "Abs Humidity"
 #define D_ADMIN "Admin"
 #define D_AIR_QUALITY "Jakość powietrza"
 #define D_AP "AP"                    // Access Point
@@ -110,7 +111,7 @@
 #define D_PSR_MAX_MEMORY "Pamięć PS-RAM"
 #define D_PSR_FREE_MEMORY "Wolna pamięć PS-RAM"
 #define D_FREQUENCY "Częstotliwość"
-#define D_GAS "Gas"
+#define D_GAS "Gaz"
 #define D_GATEWAY "Brama"
 #define D_GROUP "Grupa"
 #define D_HOST "Serwer"
@@ -133,6 +134,7 @@
 #define D_MULTI_PRESS "Wielokrotne naciśnięcie"
 #define D_NOISE "Szum"
 #define D_NONE "Brak"
+#define D_NOX "NOx"
 #define D_O2 "Tlen"
 #define D_OFF "Wyłączony"
 #define D_OFFLINE "Nieaktywny"
@@ -201,6 +203,7 @@
 #define D_UV_LEVEL "Poziom UV"
 #define D_UV_POWER "Moc UV"
 #define D_VERSION "Wersja"
+#define D_VOC "VOC"
 #define D_VOLTAGE "Napięcie"
 #define D_VOLUME "Pojemność"
 #define D_WEIGHT "Waga"
@@ -620,8 +623,8 @@
 #define D_Spannung_L3 "Napięcie L3"
 #define D_METERNR "Numer licznika"
 #define D_METERSID "Identyfikator licznika"
-#define D_GasIN "Licznik"
-#define D_H2oIN "Licznik"
+#define D_GasIN "Licznik Gazu"
+#define D_H2oIN "Licznik Wody"
 #define D_StL1L2L3 "Prąd suma"
 #define D_SpL1L2L3 "Prąd średni"
 
@@ -895,6 +898,9 @@
 #define D_SENSOR_ZEROCROSS     "ZC Pulse"
 #define D_SENSOR_HALLEFFECT    "Efekt Halla"
 #define D_SENSOR_EPD_DATA      "EPD Dane"
+#define D_SENSOR_PCF8574_INT   "PCF8574 Int"
+#define D_SENSOR_MCP23XXX_INT  "MCP23xxx Int"
+#define D_SENSOR_MCP23SXX_CS   "MCP23Sxx CS"
 #define D_SENSOR_MCP2515_CS    "MCP2515 CS"
 #define D_SENSOR_HRG15_RX      "HRG15 Rx"
 #define D_SENSOR_HRG15_TX      "HRG15 Tx"
@@ -917,6 +923,12 @@
 #define D_SENSOR_FLOWRATEMETER "Flowrate"
 #define D_SENSOR_ME007_TRIG    "ME007 Tri"
 #define D_SENSOR_ME007_RX      "ME007 Rx"
+#define D_SENSOR_TUYAMCUBR_TX  "TuyaMCUBr Tx"
+#define D_SENSOR_TUYAMCUBR_RX  "TuyaMCUBr Rx"
+#define D_SENSOR_BIOPDU_PZEM0XX_TX "BioPDU PZEM0XX Tx"
+#define D_SENSOR_BIOPDU_PZEM016_RX "BioPDU PZEM016 Rx"
+#define D_SENSOR_BIOPDU_BIT    "BioPDU Bit"
+#define D_SENSOR_LOX_O2_RX     "LoxO2 RX"
 
 // Units
 #define D_UNIT_AMPERE "A"
@@ -929,6 +941,7 @@
 #define D_UNIT_HOUR "Godz"
 #define D_UNIT_GALLONS "gal"
 #define D_UNIT_GALLONS_PER_MIN "g/m"
+#define D_UNIT_GRAM_PER_CUBIC_METER "g/m³"
 #define D_UNIT_INCH_MERCURY "inHg"
 #define D_UNIT_INCREMENTS "inc"
 #define D_UNIT_KELVIN "K"
@@ -1175,5 +1188,9 @@
 #define D_NEOPOOL_PH_HIGH                 "too high"          // ph Alarms
 #define D_NEOPOOL_PH_LOW                  "too low"
 #define D_NEOPOOL_PUMP_TIME_EXCEEDED      "czas pompowania przekroczony"
+
+// xsns_106_gdk101.ino
+#define D_AVG_RAD_DOSE                    "Średnia Dawka Promieniowania"
+#define D_UNIT_US_H                       "uSv/h"
 
 #endif  // _LANGUAGE_PL_PL_D_H_

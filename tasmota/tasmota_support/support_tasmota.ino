@@ -556,6 +556,18 @@ void SetLedLink(uint32_t state) {
 #endif  // USE_PWM_DIMMER
 }
 
+void DebugLed(uint32_t mode) {
+  static bool toggle = false;
+
+  if (PinUsed(GPIO_LEDLNK)) {
+    if (2 == mode) {
+      toggle != toggle;
+      mode = toggle;
+    }
+    digitalWrite(Pin(GPIO_LEDLNK), (TasmotaGlobal.ledlnk_inverted) ? !mode : mode);
+  }
+}
+
 void SetPulseTimer(uint32_t index, uint32_t time)
 {
   TasmotaGlobal.pulse_timer[index] = (time > 111) ? millis() + (1000 * (time - 100)) : (time > 0) ? millis() + (100 * time) : 0L;
@@ -962,12 +974,8 @@ bool MqttShowSensor(bool call_show_sensor) {
   ResponseAppendTime();
 
   int json_data_start = ResponseLength();
-  for (uint32_t i = 0; i < MAX_SWITCHES; i++) {
-#ifdef USE_TM1638
-    if (PinUsed(GPIO_SWT1, i) || (PinUsed(GPIO_TM1638CLK) && PinUsed(GPIO_TM1638DIO) && PinUsed(GPIO_TM1638STB))) {
-#else
-    if (PinUsed(GPIO_SWT1, i)) {
-#endif  // USE_TM1638
+  for (uint32_t i = 0; i < MAX_SWITCHES_SET; i++) {
+    if (SwitchUsed(i)) {
       ResponseAppend_P(PSTR(",\"%s\":\"%s\""), GetSwitchText(i).c_str(), GetStateText(SwitchState(i)));
     }
   }
@@ -1219,11 +1227,6 @@ void Every100mSeconds(void)
  * Every 0.25 second
 \*-------------------------------------------------------------------------------------------*/
 
-#ifdef USE_BLE_ESP32
-  // declare the fn
-  int ExtStopBLE();
-#endif  // USE_BLE_ESP32
-
 bool CommandsReady(void) {
   bool ready = BACKLOG_EMPTY ;
 #ifdef USE_UFILESYS
@@ -1295,7 +1298,8 @@ void Every250mSeconds(void)
     if (TasmotaGlobal.ota_state_flag && CommandsReady()) {
       TasmotaGlobal.ota_state_flag--;
       if (2 == TasmotaGlobal.ota_state_flag) {
-#ifdef CONFIG_IDF_TARGET_ESP32C3
+//#ifdef CONFIG_IDF_TARGET_ESP32C3
+#ifdef ESP32
         OtaFactoryWrite(false);
 #endif
         RtcSettings.ota_loader = 0;                       // Try requested image first
@@ -1303,18 +1307,11 @@ void Every250mSeconds(void)
         SettingsSave(1);                                  // Free flash for OTA update
       }
       if (TasmotaGlobal.ota_state_flag <= 0) {
-#ifdef USE_BLE_ESP32
-        ExtStopBLE();
-#endif  // USE_BLE_ESP32
-#ifdef USE_COUNTER
-        CounterInterruptDisable(true);                    // Prevent OTA failures on 100Hz counter interrupts
-#endif  // USE_COUNTER
+        AllowInterrupts(0);
 #ifdef USE_WEBSERVER
-        if (Settings->webserver) StopWebserver();
+//        if (Settings->webserver) StopWebserver();       // 20230107 No more need for disabling webserver during OTA
 #endif  // USE_WEBSERVER
-#ifdef USE_ARILUX_RF
-        AriluxRfDisable();                                // Prevent restart exception on Arilux Interrupt routine
-#endif  // USE_ARILUX_RF
+
         TasmotaGlobal.ota_state_flag = 92;
         ota_result = 0;
         char full_ota_url[200];
@@ -1384,7 +1381,8 @@ void Every250mSeconds(void)
           } else
 #endif  // USE_WEBCLIENT_HTTPS
           if (EspSingleOtaPartition()) {
-#ifdef CONFIG_IDF_TARGET_ESP32C3
+//#ifdef CONFIG_IDF_TARGET_ESP32C3
+#ifdef ESP32
             OtaFactoryWrite(true);
 #endif
             RtcSettings.ota_loader = 1;                 // Try safeboot image next
@@ -1440,9 +1438,7 @@ void Every250mSeconds(void)
         ResponseAppend_P(PSTR("\"}"));
 //        TasmotaGlobal.restart_flag = 2;                   // Restart anyway to keep memory clean webserver
         MqttPublishPrefixTopicRulesProcess_P(STAT, PSTR(D_CMND_UPGRADE));
-#ifdef USE_COUNTER
-        CounterInterruptDisable(false);
-#endif  // USE_COUNTER
+        AllowInterrupts(1);
       }
     }
     break;
@@ -1517,6 +1513,9 @@ void Every250mSeconds(void)
           SettingsUpdateText(SET_MQTT_TOPIC, storage_mqtttopic);
           Settings->mqtt_port = mqtt_port;
         }
+
+        XdrvCall(FUNC_RESET_SETTINGS);
+
         TasmotaGlobal.restart_flag = 3;                   // Finish backlog then Restart 1
       }
       else if (213 == TasmotaGlobal.restart_flag) {       // Reset 3
@@ -1556,10 +1555,12 @@ void Every250mSeconds(void)
     {
       if (!TasmotaGlobal.global_state.network_down) {
 #ifdef FIRMWARE_MINIMAL
-#ifdef CONFIG_IDF_TARGET_ESP32C3
+//#ifdef CONFIG_IDF_TARGET_ESP32C3
+#ifdef ESP32
         if (OtaFactoryRead()) {
           OtaFactoryWrite(false);
           TasmotaGlobal.ota_state_flag = 3;
+          AddLog(LOG_LEVEL_DEBUG, PSTR("OTA: Propagating upload"));
         }
 #endif
         if (1 == RtcSettings.ota_loader) {
@@ -1576,14 +1577,10 @@ void Every250mSeconds(void)
         if (Settings->webserver) {
 
 #ifdef ESP8266
-          if (!WifiIsInManagerMode()) { StartWebserver(Settings->webserver, WiFi.localIP()); }
+          if (!WifiIsInManagerMode()) { StartWebserver(Settings->webserver); }
 #endif  // ESP8266
 #ifdef ESP32
-#ifdef USE_ETHERNET
-          StartWebserver(Settings->webserver, (EthernetLocalIP()) ? EthernetLocalIP() : WiFi.localIP());
-#else
-          StartWebserver(Settings->webserver, WiFi.localIP());
-#endif
+          StartWebserver(Settings->webserver);
 #endif  // ESP32
 
 #ifdef USE_DISCOVERY
@@ -1646,9 +1643,7 @@ void ArduinoOTAInit(void)
 #ifdef USE_WEBSERVER
     if (Settings->webserver) { StopWebserver(); }
 #endif  // USE_WEBSERVER
-#ifdef USE_ARILUX_RF
-    AriluxRfDisable();       // Prevent restart exception on Arilux Interrupt routine
-#endif  // USE_ARILUX_RF
+    AllowInterrupts(0);
     if (Settings->flag.mqtt_enabled) {
       MqttDisconnect();      // SetOption3  - Enable MQTT
     }
@@ -2213,38 +2208,7 @@ void GpioInit(void)
 #endif
 #endif  // USE_I2C
 
-  XdrvCall(FUNC_I2C_INIT);                                 // Init RTC
-
   TasmotaGlobal.devices_present = 0;
-  TasmotaGlobal.light_type = LT_BASIC;                     // Use basic PWM control if SetOption15 = 0
-
-  XsnsCall(FUNC_MODULE_INIT);
-
-  if (XdrvCall(FUNC_MODULE_INIT)) {
-    // Serviced
-  }
-#ifdef ESP8266
-  else if (YTF_IR_BRIDGE == TasmotaGlobal.module_type) {
-    ClaimSerial();  // Stop serial loopback mode
-//    TasmotaGlobal.devices_present = 1;
-  }
-  else if (SONOFF_DUAL == TasmotaGlobal.module_type) {
-    TasmotaGlobal.devices_present = 2;
-    SetSerial(19200, TS_SERIAL_8N1);
-  }
-  else if (CH4 == TasmotaGlobal.module_type) {
-    TasmotaGlobal.devices_present = 4;
-    SetSerial(19200, TS_SERIAL_8N1);
-  }
-#ifdef USE_SONOFF_SC
-  else if (SONOFF_SC == TasmotaGlobal.module_type) {
-    SetSerial(19200, TS_SERIAL_8N1);
-  }
-#endif  // USE_SONOFF_SC
-#endif  // ESP8266
-
-  GpioInitPwm();
-
   uint32_t bi_device = 0;
   for (uint32_t i = 0; i < MAX_RELAYS; i++) {
     if (PinUsed(GPIO_REL1, i)) {
@@ -2260,6 +2224,30 @@ void GpioInit(void)
       }
     }
   }
+
+  XdrvCall(FUNC_SETUP_RING1);                              // Setup RTC hardware
+  XsnsXdrvCall(FUNC_SETUP_RING2);                          // Setup hardware supporting virtual switches/buttons/relays
+
+  TasmotaGlobal.light_type = LT_BASIC;                     // Use basic PWM control if SetOption15 = 0
+
+  if (XdrvCall(FUNC_MODULE_INIT)) {                        // Init and claim single module (like tuya, armtronix, ifan, light)
+    // Serviced
+  }
+#ifdef ESP8266
+  else if (YTF_IR_BRIDGE == TasmotaGlobal.module_type) {
+    ClaimSerial();  // Stop serial loopback mode
+  }
+  else if (SONOFF_DUAL == TasmotaGlobal.module_type) {
+    UpdateDevicesPresent(2);
+    SetSerial(19200, TS_SERIAL_8N1);
+  }
+  else if (CH4 == TasmotaGlobal.module_type) {
+    UpdateDevicesPresent(4);
+    SetSerial(19200, TS_SERIAL_8N1);
+  }
+#endif  // ESP8266
+
+  GpioInitPwm();
 
   for (uint32_t i = 0; i < MAX_LEDS; i++) {
     if (PinUsed(GPIO_LED1, i)) {

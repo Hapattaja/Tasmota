@@ -3,7 +3,7 @@
 SpotHinta API client for Tasmota https://spot-hinta.fi/JustNow
 
 # Rule to power on or off the relay based on the result from SpotHintaJustNowRank API request.
-# - Executes every hour and 60 seconds after that for trying to verify that we are getting a information for the correct hour.
+# - Executes every hour and once after 60 seconds for trying to verify that we are getting a information for the correct hour.
 # - If request fails, retries after 600 seconds.
 # - Adjust rank and price in the rule.
 

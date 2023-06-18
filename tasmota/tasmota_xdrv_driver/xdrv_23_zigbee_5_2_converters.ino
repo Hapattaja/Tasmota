@@ -1302,9 +1302,15 @@ void ZCLFrame::syntheticAqaraCubeOrButton(class Z_attribute_list &attr_list, cla
 
   if (modelId.startsWith(F("lumi.sensor_cube"))) {   // only for Aqara cube
     int32_t val = attr.getInt();
+#ifdef ESP8266
     const __FlashStringHelper *aqara_cube = F("AqaraCube");
     const __FlashStringHelper *aqara_cube_side = F("AqaraCubeSide");
     const __FlashStringHelper *aqara_cube_from_side = F("AqaraCubeFromSide");
+#else
+    const char *aqara_cube = "AqaraCube";
+    const char *aqara_cube_side = "AqaraCubeSide";
+    const char *aqara_cube_from_side = "AqaraCubeFromSide";
+#endif
 
     switch (val) {
       case 0:
@@ -1355,8 +1361,13 @@ void ZCLFrame::syntheticAqaraCubeOrButton(class Z_attribute_list &attr_list, cla
     //     presentValue = x + 512 = double tap while side x is on top
   } else if (modelId.startsWith(F("lumi.remote")) || modelId.startsWith(F("lumi.sensor_swit"))) {   // only for Aqara buttons WXKG11LM & WXKG12LM, 'swit' because of #9923
     int32_t val = attr.getInt();
+#ifdef ESP8266
     const __FlashStringHelper *aqara_click = F("click");    // deprecated
     const __FlashStringHelper *aqara_action = F("action");  // deprecated
+#else
+    const char *aqara_click = "click";    // deprecated
+    const char *aqara_action = "action";  // deprecated
+#endif
     Z_attribute & attr_click = attr_list.addAttribute(PSTR("Click"), true);
 
     switch (val) {
@@ -1408,14 +1419,14 @@ void ZCLFrame::syntheticAqaraVibration(class Z_attribute_list &attr_list, class 
     case 0x0055:
       {
         int32_t ivalue = attr.getInt();
-        const __FlashStringHelper * svalue;
+        const char * svalue;
         switch (ivalue) {
-          case 1: svalue = F("vibrate"); break;
-          case 2: svalue = F("tilt"); break;
-          case 3: svalue = F("drop"); break;
-          default: svalue = F("unknown"); break;
+          case 1: svalue = PSTR("vibrate"); break;
+          case 2: svalue = PSTR("tilt"); break;
+          case 3: svalue = PSTR("drop"); break;
+          default: svalue = PSTR("unknown"); break;
         }
-        attr.setStr((const char*)svalue);
+        attr.setStr(svalue);
       }
       break;
     case 0x0503:
@@ -1612,6 +1623,7 @@ void Z_parseAttributeKey_inner(uint16_t shortaddr, class Z_attribute & attr, uin
         attr.attr_type = matched_attr.zigbee_type;
         attr.attr_multiplier = matched_attr.multiplier;
         attr.attr_divider = matched_attr.divider;
+        attr.attr_base = matched_attr.base;
         attr.manuf = matched_attr.manuf;
       }
     }
@@ -1695,8 +1707,8 @@ void Z_Data::toAttributes(Z_attribute_list & attr_list) const {
     const Z_AttributeConverter *converter = &Z_PostProcess[i];
     uint8_t conv_export = pgm_read_byte(&converter->multiplier_idx) & Z_EXPORT_DATA;
     uint8_t conv_mapping = pgm_read_byte(&converter->mapping);
-    int8_t multiplier = 1;
-    int8_t divider = 1;
+    uint16_t multiplier = 1;
+    uint16_t divider = 1;
     int8_t multiplier8 = CmToMultiplier(pgm_read_byte(&converter->multiplier_idx));
     if (multiplier8 > 1) { multiplier = multiplier8; }
     if (multiplier8 < 0) { divider = -multiplier8; }
