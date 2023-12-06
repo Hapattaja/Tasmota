@@ -239,7 +239,7 @@ int Ruuvi32_AdvertismentCallback(BLE_ESP32::ble_advertisment_t *pStruct)
           sensor->is_present = 1;
 
           if (RuuviDebugMode > 0) {
-            AddLog(LOG_LEVEL_DEBUG, PSTR("%s: MAC: %02x%02x%02x%02x%02x%02x Temperature: %f °C Humidity: %f %% Pressure: %f hPa Tx power: %f Battery: %d V RSSI: %d"),
+            AddLog(LOG_LEVEL_DEBUG, PSTR("%s: MAC: %02x%02x%02x%02x%02x%02x Temperature: %f °C Humidity: %f %% Pressure: %f hPa Tx power: %f Battery: %f V RSSI: %d"),
                 "Ruuvi",
                 sensor->MAC[0], sensor->MAC[1], sensor->MAC[2], sensor->MAC[3], sensor->MAC[4], sensor->MAC[5],
                 data.temperature, data.humidity, data.pressure, data.tx_power, data.battery_voltage, data.RSSI);
@@ -413,7 +413,7 @@ void Ruuvi32_ResponseAppendSensor(ruuvi_sensor_t *sensor)
     ResponseAppend_P(PSTR(",\"" D_JSON_PRESSURE "\":%.2f"), data->pressure + sensor->pressure_offset);
   }
   if (!isnan(data->battery_voltage)) {
-    ResponseAppend_P(PSTR(",\"Battery\":%u"), data->battery_voltage);
+    ResponseAppend_P(PSTR(",\"Battery\":%.3f"), data->battery_voltage);
   }
   if (!isnan(data->RSSI)) {
     ResponseAppend_P(PSTR(",\"RSSI\":%d"), data->RSSI);
