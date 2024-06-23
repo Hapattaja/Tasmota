@@ -247,6 +247,29 @@ int8_t cs;
       }
     }
 
+    cp = strstr(ddesc, ":UTI");
+    if (cp) {
+      cp += 4;                  // skip ":UTI"
+      cp = strchr(cp, ',');     // skip device name
+      cp++;
+      cp = strchr(cp, ',');
+      cp++;
+      if (*cp == 'I') {           // I= I2C
+        cp = strchr(cp, ',');     // skip interface type
+        cp++;
+        cp = strchr(cp, ',');     // skip I2C bus number
+        cp++;
+        replacepin(&cp, Pin(GPIO_TS_RST));
+        replacepin(&cp, Pin(GPIO_TS_IRQ));
+      } else if (*cp == 'S') {    // S= SPI
+        cp = strchr(cp, ',');     // skip interface type
+        cp++;
+        replacepin(&cp, Pin(GPIO_TS_SPI_CS));
+        replacepin(&cp, Pin(GPIO_TS_RST));
+        replacepin(&cp, Pin(GPIO_TS_IRQ));
+      }
+    }
+
     uint16_t xs, ys;
     // we need screen size for gt911 touch controler
     cp = strstr(ddesc, ":H,");
@@ -459,11 +482,6 @@ int8_t cs;
     bg_color = renderer->bgcol();
     color_type = renderer->color_type();
 
-#ifdef USE_M5STACK_CORE2
-    renderer->SetPwrCB(Core2DisplayPower);
-    renderer->SetDimCB(Core2DisplayDim);
-#endif // USE_M5STACK_CORE2
-
     renderer->DisplayInit(DISPLAY_INIT_MODE, Settings->display_size, inirot, Settings->display_font);
 
     Settings->display_width = renderer->width();
@@ -501,7 +519,7 @@ int8_t cs;
 
 /*********************************************************************************************/
 
-int8_t replacepin(char **cp, uint16_t pin) {
+int8_t replacepin(char **cp, int16_t pin) {
   int8_t res = 0;
   char *lp = *cp;
   if (*lp == ',') lp++;

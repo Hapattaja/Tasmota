@@ -206,7 +206,7 @@ public:
 	SML_ESP32_SERIAL(uint32_t uart_index);
   virtual ~SML_ESP32_SERIAL();
   bool begin(uint32_t speed, uint32_t smode, int32_t recpin, int32_t trxpin, int32_t invert);
-  int32_t peek(void);
+  int peek(void);
   int read(void) override;
   size_t write(uint8_t byte) override;
   int available(void) override;
@@ -256,7 +256,11 @@ SML_ESP32_SERIAL::~SML_ESP32_SERIAL(void) {
 }
 
 void SML_ESP32_SERIAL::setbaud(uint32_t speed) {
+#ifdef __riscv
+  m_bit_time = 1000000 / speed;
+#else
   m_bit_time = ESP.getCpuFreqMHz() * 1000000 / speed;
+#endif
 }
 
 void SML_ESP32_SERIAL::end(void) {
@@ -265,7 +269,7 @@ void SML_ESP32_SERIAL::end(void) {
   }
 }
 
-bool SML_ESP32_SERIAL::begin(uint32_t speed, uint32_t smode, int32_t recpin, int32_t trxpin, int invert) {
+bool SML_ESP32_SERIAL::begin(uint32_t speed, uint32_t smode, int32_t recpin, int32_t trxpin, int32_t invert) {
   if (!m_valid) { return false; }
 
   m_buffer = 0;
@@ -299,7 +303,7 @@ void SML_ESP32_SERIAL::flush(void) {
   }
 }
 
-int32_t SML_ESP32_SERIAL::peek(void) {
+int SML_ESP32_SERIAL::peek(void) {
   if (hws) {
     return  hws->peek();
   } else {
@@ -366,13 +370,21 @@ void IRAM_ATTR SML_ESP32_SERIAL::rxRead(void) {
 
   if (!level && !ss_index) {
     // start condition
+#ifdef __riscv
+    ss_bstart = micros() - (m_bit_time / 4);
+#else
     ss_bstart = ESP.getCycleCount() - (m_bit_time / 4);
+#endif
     ss_byte = 0;
     ss_index++;
   } else {
     // now any bit changes go here
     // calc bit number
+#ifdef __riscv
+    diff = (micros() - ss_bstart) / m_bit_time;
+#else
     diff = (ESP.getCycleCount() - ss_bstart) / m_bit_time;
+#endif
 
     if (!level && diff > SML_LASTBIT) {
       // start bit of next byte, store  and restart
@@ -385,8 +397,11 @@ void IRAM_ATTR SML_ESP32_SERIAL::rxRead(void) {
         m_buffer[m_in_pos] = ss_byte >> 1;
         m_in_pos = next;
       }
-
+#ifdef __riscv
+      ss_bstart = micros() - (m_bit_time / 4);
+#else
       ss_bstart = ESP.getCycleCount() - (m_bit_time / 4);
+#endif
       ss_byte = 0;
       ss_index = 1;
       return;
@@ -538,6 +553,12 @@ struct METER_DESC {
 
 
 #define TCP_MODE_FLG 0x7f
+
+// Meter flags
+#define PULLUP_FLG 0x01
+#define ANALOG_FLG 0x02
+#define MEDIAN_FILTER_FLG 0x10
+#define NO_SYNC_FLG 0x20
 
 struct METER_DESC  meter_desc[MAX_METERS];
 
@@ -1465,6 +1486,11 @@ void sml_shift_in(uint32_t meters, uint32_t shard) {
     case 's':
       // binary obis = sml
       mp->sbuff[mp->sbsiz - 1] = iob;
+      if (mp->sbuff[0] != SML_SYNC && ((mp->flag & NO_SYNC_FLG) == 0)) {
+        // Skip decoding, when buffer does not start with sync byte (0x77)
+        sb_counter++;
+        return;
+      }
       break;
     case 'r':
       // raw with shift
@@ -1877,7 +1903,7 @@ void SML_Decode(uint8_t index) {
               // differece is only valid after 2. calculation
               sml_globs.dvalid[vindex] = 2;
 #ifdef USE_SML_MEDIAN_FILTER
-              if (sml_globs.mp[mindex].flag & 16) {
+              if (sml_globs.mp[mindex].flag & MEDIAN_FILTER_FLG) {
                 sml_globs.meter_vars[vindex] = sml_median(&sml_globs.sml_mf[vindex], dres);
               } else {
                 sml_globs.meter_vars[vindex] = dres;
@@ -2007,7 +2033,7 @@ void SML_Decode(uint8_t index) {
               } else {
                 mp++;
                 if (isdigit(*mp)) {
-                  uint8_t skip = strtol((char*)mp, (char**)&mp, 10);
+                  uint32_t skip = strtol((char*)mp, (char**)&mp, 10);
                   cp += skip;
                 }
               }
@@ -2424,7 +2450,7 @@ void SML_Decode(uint8_t index) {
             }
           }
 #ifdef USE_SML_MEDIAN_FILTER
-          if (sml_globs.mp[mindex].flag & 16) {
+          if (sml_globs.mp[mindex].flag & MEDIAN_FILTER_FLG) {
             sml_globs.meter_vars[vindex] = sml_median(&sml_globs.sml_mf[vindex], dval);
           } else {
             sml_globs.meter_vars[vindex] = dval;
@@ -2723,7 +2749,8 @@ struct SML_COUNTER {
 uint8_t sml_counter_pinstate;
 uint8_t sml_cnt_index[MAX_COUNTERS] =  { 0, 1, 2, 3 };
 
-void IRAM_ATTR SML_CounterIsr(void *arg) {
+void IRAM_ATTR SML_CounterIsr(void *arg);
+void SML_CounterIsr(void *arg) {
   uint32_t index = *static_cast<uint8_t*>(arg);
 
   uint32_t time = millis();
@@ -3374,11 +3401,11 @@ next_line:
   for (uint8_t meters = 0; meters < sml_globs.meters_used; meters++) {
     METER_DESC *mp = &meter_desc[meters];
     if (mp->type == 'c') {
-        if (mp->flag & 2) {
+        if (mp->flag & ANALOG_FLG) {
 
         } else {
           // counters, set to input with pullup
-          if (mp->flag & 1) {
+          if (mp->flag & PULLUP_FLG) {
             pinMode(mp->srcpin, INPUT_PULLUP);
           } else {
             pinMode(mp->srcpin, INPUT);
@@ -3617,7 +3644,11 @@ next_line:
   sml_globs.sml_mf = (struct SML_MEDIAN_FILTER*)calloc(sml_globs.maxvars, sizeof(struct SML_MEDIAN_FILTER));
 #endif
 
-  if (!sml_globs.maxvars || !sml_globs.meter_vars || !sml_globs.dvalid || !sml_globs.sml_mf) {
+  if (!sml_globs.maxvars || !sml_globs.meter_vars || !sml_globs.dvalid
+#ifdef USE_SML_MEDIAN_FILTER
+   || !sml_globs.sml_mf
+#endif
+  ) {
     AddLog(LOG_LEVEL_INFO, PSTR("sml memory error!"));
     return;
   }
@@ -3857,7 +3888,7 @@ uint32_t ctime = millis();
         if (ctime - sml_counters[cindex].sml_cnt_last_ts > sml_globs.mp[meters].params) {
           sml_counters[cindex].sml_cnt_last_ts = ctime;
 
-          if (sml_globs.mp[meters].flag & 2) {
+          if (sml_globs.mp[meters].flag & ANALOG_FLG) {
             // analog mode, get next value
           } else {
             // poll digital input

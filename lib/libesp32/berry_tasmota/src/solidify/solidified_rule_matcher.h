@@ -9,7 +9,8 @@ extern const bclass be_class_Rule_Matcher_Key;
 /********************************************************************
 ** Solidified function: tostring
 ********************************************************************/
-be_local_closure(Rule_Matcher_Key_tostring,   /* name */
+extern const bclass be_class_Rule_Matcher_Key;
+be_local_closure(class_Rule_Matcher_Key_tostring,   /* name */
   be_nested_proto(
     3,                          /* nstack */
     1,                          /* argc */
@@ -17,7 +18,7 @@ be_local_closure(Rule_Matcher_Key_tostring,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher_Key, 
     1,                          /* has constants */
     ( &(const bvalue[ 3]) {     /* constants */
     /* K0   */  be_nested_str(_X3CMatcher_X20key_X3D_X27),
@@ -42,15 +43,16 @@ be_local_closure(Rule_Matcher_Key_tostring,   /* name */
 /********************************************************************
 ** Solidified function: find_key_i
 ********************************************************************/
-be_local_closure(Rule_Matcher_Key_find_key_i,   /* name */
+extern const bclass be_class_Rule_Matcher_Key;
+be_local_closure(class_Rule_Matcher_Key_find_key_i,   /* name */
   be_nested_proto(
-    10,                          /* nstack */
+    11,                          /* nstack */
     2,                          /* argc */
     4,                          /* varg */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher_Key, 
     1,                          /* has constants */
     ( &(const bvalue[ 5]) {     /* constants */
     /* K0   */  be_const_class(be_class_Rule_Matcher_Key),
@@ -61,7 +63,7 @@ be_local_closure(Rule_Matcher_Key_find_key_i,   /* name */
     }),
     &be_const_str_find_key_i,
     &be_const_str_solidified,
-    ( &(const binstruction[29]) {  /* code */
+    ( &(const binstruction[31]) {  /* code */
       0x58080000,  //  0000  LDCONST	R2	K0
       0xA40E0200,  //  0001  IMPORT	R3	K1
       0x8C100702,  //  0002  GETMET	R4	R3	K2
@@ -71,26 +73,28 @@ be_local_closure(Rule_Matcher_Key_find_key_i,   /* name */
       0x5C180000,  //  0006  MOVE	R6	R0
       0x601C0013,  //  0007  GETGBL	R7	G19
       0x7C140400,  //  0008  CALL	R5	2
-      0x78160011,  //  0009  JMPF	R5	#001C
+      0x78160013,  //  0009  JMPF	R5	#001E
       0x60140010,  //  000A  GETGBL	R5	G16
       0x8C180103,  //  000B  GETMET	R6	R0	K3
       0x7C180200,  //  000C  CALL	R6	1
       0x7C140200,  //  000D  CALL	R5	1
-      0xA8020009,  //  000E  EXBLK	0	#0019
+      0xA802000B,  //  000E  EXBLK	0	#001B
       0x5C180A00,  //  000F  MOVE	R6	R5
       0x7C180000,  //  0010  CALL	R6	0
       0x8C1C0702,  //  0011  GETMET	R7	R3	K2
-      0x5C240C00,  //  0012  MOVE	R9	R6
-      0x7C1C0400,  //  0013  CALL	R7	2
-      0x1C1C0E04,  //  0014  EQ	R7	R7	R4
-      0x781E0001,  //  0015  JMPF	R7	#0018
-      0xA8040001,  //  0016  EXBLK	1	1
-      0x80040C00,  //  0017  RET	1	R6
-      0x7001FFF5,  //  0018  JMP		#000F
-      0x58140004,  //  0019  LDCONST	R5	K4
-      0xAC140200,  //  001A  CATCH	R5	1	0
-      0xB0080000,  //  001B  RAISE	2	R0	R0
-      0x80000000,  //  001C  RET	0
+      0x60240008,  //  0012  GETGBL	R9	G8
+      0x5C280C00,  //  0013  MOVE	R10	R6
+      0x7C240200,  //  0014  CALL	R9	1
+      0x7C1C0400,  //  0015  CALL	R7	2
+      0x1C1C0E04,  //  0016  EQ	R7	R7	R4
+      0x781E0001,  //  0017  JMPF	R7	#001A
+      0xA8040001,  //  0018  EXBLK	1	1
+      0x80040C00,  //  0019  RET	1	R6
+      0x7001FFF3,  //  001A  JMP		#000F
+      0x58140004,  //  001B  LDCONST	R5	K4
+      0xAC140200,  //  001C  CATCH	R5	1	0
+      0xB0080000,  //  001D  RAISE	2	R0	R0
+      0x80000000,  //  001E  RET	0
     })
   )
 );
@@ -100,7 +104,8 @@ be_local_closure(Rule_Matcher_Key_find_key_i,   /* name */
 /********************************************************************
 ** Solidified function: match
 ********************************************************************/
-be_local_closure(Rule_Matcher_Key_match,   /* name */
+extern const bclass be_class_Rule_Matcher_Key;
+be_local_closure(class_Rule_Matcher_Key_match,   /* name */
   be_nested_proto(
     6,                          /* nstack */
     2,                          /* argc */
@@ -108,7 +113,7 @@ be_local_closure(Rule_Matcher_Key_match,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher_Key, 
     1,                          /* has constants */
     ( &(const bvalue[ 2]) {     /* constants */
     /* K0   */  be_nested_str(find_key_i),
@@ -149,7 +154,8 @@ be_local_closure(Rule_Matcher_Key_match,   /* name */
 /********************************************************************
 ** Solidified function: init
 ********************************************************************/
-be_local_closure(Rule_Matcher_Key_init,   /* name */
+extern const bclass be_class_Rule_Matcher_Key;
+be_local_closure(class_Rule_Matcher_Key_init,   /* name */
   be_nested_proto(
     2,                          /* nstack */
     2,                          /* argc */
@@ -157,7 +163,7 @@ be_local_closure(Rule_Matcher_Key_init,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher_Key, 
     1,                          /* has constants */
     ( &(const bvalue[ 1]) {     /* constants */
     /* K0   */  be_nested_str(name),
@@ -181,28 +187,22 @@ be_local_class(Rule_Matcher_Key,
     NULL,
     be_nested_map(5,
     ( (struct bmapnode*) &(const bmapnode[]) {
-        { be_const_key(tostring, 3), be_const_closure(Rule_Matcher_Key_tostring_closure) },
-        { be_const_key(find_key_i, -1), be_const_static_closure(Rule_Matcher_Key_find_key_i_closure) },
+        { be_const_key(tostring, 3), be_const_closure(class_Rule_Matcher_Key_tostring_closure) },
+        { be_const_key(find_key_i, -1), be_const_static_closure(class_Rule_Matcher_Key_find_key_i_closure) },
         { be_const_key(name, -1), be_const_var(0) },
-        { be_const_key(init, 4), be_const_closure(Rule_Matcher_Key_init_closure) },
-        { be_const_key(match, -1), be_const_closure(Rule_Matcher_Key_match_closure) },
+        { be_const_key(init, 4), be_const_closure(class_Rule_Matcher_Key_init_closure) },
+        { be_const_key(match, -1), be_const_closure(class_Rule_Matcher_Key_match_closure) },
     })),
     (bstring*) &be_const_str_Rule_Matcher_Key
 );
-/*******************************************************************/
-
-void be_load_Rule_Matcher_Key_class(bvm *vm) {
-    be_pushntvclass(vm, &be_class_Rule_Matcher_Key);
-    be_setglobal(vm, "Rule_Matcher_Key");
-    be_pop(vm, 1);
-}
 
 extern const bclass be_class_Rule_Matcher_Wildcard;
 
 /********************************************************************
 ** Solidified function: match
 ********************************************************************/
-be_local_closure(Rule_Matcher_Wildcard_match,   /* name */
+extern const bclass be_class_Rule_Matcher_Wildcard;
+be_local_closure(class_Rule_Matcher_Wildcard_match,   /* name */
   be_nested_proto(
     5,                          /* nstack */
     2,                          /* argc */
@@ -210,7 +210,7 @@ be_local_closure(Rule_Matcher_Wildcard_match,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher_Wildcard, 
     1,                          /* has constants */
     ( &(const bvalue[ 2]) {     /* constants */
     /* K0   */  be_const_int(0),
@@ -251,7 +251,8 @@ be_local_closure(Rule_Matcher_Wildcard_match,   /* name */
 /********************************************************************
 ** Solidified function: tostring
 ********************************************************************/
-be_local_closure(Rule_Matcher_Wildcard_tostring,   /* name */
+extern const bclass be_class_Rule_Matcher_Wildcard;
+be_local_closure(class_Rule_Matcher_Wildcard_tostring,   /* name */
   be_nested_proto(
     1,                          /* nstack */
     1,                          /* argc */
@@ -259,7 +260,7 @@ be_local_closure(Rule_Matcher_Wildcard_tostring,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher_Wildcard, 
     1,                          /* has constants */
     ( &(const bvalue[ 1]) {     /* constants */
     /* K0   */  be_nested_str(_X3CMatcher_X20any_X3E),
@@ -282,25 +283,19 @@ be_local_class(Rule_Matcher_Wildcard,
     NULL,
     be_nested_map(2,
     ( (struct bmapnode*) &(const bmapnode[]) {
-        { be_const_key(match, -1), be_const_closure(Rule_Matcher_Wildcard_match_closure) },
-        { be_const_key(tostring, -1), be_const_closure(Rule_Matcher_Wildcard_tostring_closure) },
+        { be_const_key(match, -1), be_const_closure(class_Rule_Matcher_Wildcard_match_closure) },
+        { be_const_key(tostring, -1), be_const_closure(class_Rule_Matcher_Wildcard_tostring_closure) },
     })),
     (bstring*) &be_const_str_Rule_Matcher_Wildcard
 );
-/*******************************************************************/
-
-void be_load_Rule_Matcher_Wildcard_class(bvm *vm) {
-    be_pushntvclass(vm, &be_class_Rule_Matcher_Wildcard);
-    be_setglobal(vm, "Rule_Matcher_Wildcard");
-    be_pop(vm, 1);
-}
 
 extern const bclass be_class_Rule_Matcher_Operator;
 
 /********************************************************************
 ** Solidified function: match
 ********************************************************************/
-be_local_closure(Rule_Matcher_Operator_match,   /* name */
+extern const bclass be_class_Rule_Matcher_Operator;
+be_local_closure(class_Rule_Matcher_Operator_match,   /* name */
   be_nested_proto(
     7,                          /* nstack */
     2,                          /* argc */
@@ -308,7 +303,7 @@ be_local_closure(Rule_Matcher_Operator_match,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher_Operator, 
     1,                          /* has constants */
     ( &(const bvalue[ 5]) {     /* constants */
     /* K0   */  be_nested_str(int),
@@ -349,7 +344,8 @@ be_local_closure(Rule_Matcher_Operator_match,   /* name */
 /********************************************************************
 ** Solidified function: op_parse
 ********************************************************************/
-be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
+extern const bclass be_class_Rule_Matcher_Operator;
+be_local_closure(class_Rule_Matcher_Operator_op_parse,   /* name */
   be_nested_proto(
     22,                          /* nstack */
     3,                          /* argc */
@@ -357,7 +353,7 @@ be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     1,                          /* has sup protos */
-    ( &(const struct bproto*[13]) {
+    ( &(const struct bproto*[14]) {
       be_nested_proto(
         7,                          /* nstack */
         2,                          /* argc */
@@ -365,7 +361,7 @@ be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
         0,                          /* has upvals */
         NULL,                       /* no upvals */
         0,                          /* has sup protos */
-        NULL,                       /* no sub protos */
+        NULL, 
         1,                          /* has constants */
         ( &(const bvalue[ 3]) {     /* constants */
         /* K0   */  be_nested_str(tasmota),
@@ -393,7 +389,7 @@ be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
         0,                          /* has upvals */
         NULL,                       /* no upvals */
         0,                          /* has sup protos */
-        NULL,                       /* no sub protos */
+        NULL, 
         1,                          /* has constants */
         ( &(const bvalue[ 3]) {     /* constants */
         /* K0   */  be_nested_str(tasmota),
@@ -421,7 +417,7 @@ be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
         0,                          /* has upvals */
         NULL,                       /* no upvals */
         0,                          /* has sup protos */
-        NULL,                       /* no sub protos */
+        NULL, 
         1,                          /* has constants */
         ( &(const bvalue[ 3]) {     /* constants */
         /* K0   */  be_nested_str(tasmota),
@@ -449,7 +445,7 @@ be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
         0,                          /* has upvals */
         NULL,                       /* no upvals */
         0,                          /* has sup protos */
-        NULL,                       /* no sub protos */
+        NULL, 
         1,                          /* has constants */
         ( &(const bvalue[ 2]) {     /* constants */
         /* K0   */  be_nested_str(tasmota),
@@ -476,7 +472,7 @@ be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
         0,                          /* has upvals */
         NULL,                       /* no upvals */
         0,                          /* has sup protos */
-        NULL,                       /* no sub protos */
+        NULL, 
         1,                          /* has constants */
         ( &(const bvalue[ 2]) {     /* constants */
         /* K0   */  be_nested_str(tasmota),
@@ -503,7 +499,7 @@ be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
         0,                          /* has upvals */
         NULL,                       /* no upvals */
         0,                          /* has sup protos */
-        NULL,                       /* no sub protos */
+        NULL, 
         1,                          /* has constants */
         ( &(const bvalue[ 2]) {     /* constants */
         /* K0   */  be_nested_str(tasmota),
@@ -530,7 +526,7 @@ be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
         0,                          /* has upvals */
         NULL,                       /* no upvals */
         0,                          /* has sup protos */
-        NULL,                       /* no sub protos */
+        NULL, 
         0,                          /* has constants */
         NULL,                       /* no const */
         &be_const_str_op_eq,
@@ -550,7 +546,7 @@ be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
         0,                          /* has upvals */
         NULL,                       /* no upvals */
         0,                          /* has sup protos */
-        NULL,                       /* no sub protos */
+        NULL, 
         0,                          /* has constants */
         NULL,                       /* no const */
         &be_const_str_op_neq,
@@ -570,7 +566,7 @@ be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
         0,                          /* has upvals */
         NULL,                       /* no upvals */
         0,                          /* has sup protos */
-        NULL,                       /* no sub protos */
+        NULL, 
         0,                          /* has constants */
         NULL,                       /* no const */
         &be_const_str_op_gt,
@@ -590,7 +586,7 @@ be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
         0,                          /* has upvals */
         NULL,                       /* no upvals */
         0,                          /* has sup protos */
-        NULL,                       /* no sub protos */
+        NULL, 
         0,                          /* has constants */
         NULL,                       /* no const */
         &be_const_str_op_gte,
@@ -610,7 +606,7 @@ be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
         0,                          /* has upvals */
         NULL,                       /* no upvals */
         0,                          /* has sup protos */
-        NULL,                       /* no sub protos */
+        NULL, 
         0,                          /* has constants */
         NULL,                       /* no const */
         &be_const_str_op_lt,
@@ -630,7 +626,7 @@ be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
         0,                          /* has upvals */
         NULL,                       /* no upvals */
         0,                          /* has sup protos */
-        NULL,                       /* no sub protos */
+        NULL, 
         0,                          /* has constants */
         NULL,                       /* no const */
         &be_const_str_op_lte,
@@ -650,7 +646,7 @@ be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
         0,                          /* has upvals */
         NULL,                       /* no upvals */
         0,                          /* has sup protos */
-        NULL,                       /* no sub protos */
+        NULL, 
         1,                          /* has constants */
         ( &(const bvalue[ 1]) {     /* constants */
         /* K0   */  be_const_int(0),
@@ -666,6 +662,7 @@ be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
           0x80040400,  //  0005  RET	1	R2
         })
       ),
+    &be_class_Rule_Matcher_Operator, 
     }),
     1,                          /* has constants */
     ( &(const bvalue[23]) {     /* constants */
@@ -802,7 +799,8 @@ be_local_closure(Rule_Matcher_Operator_op_parse,   /* name */
 /********************************************************************
 ** Solidified function: tostring
 ********************************************************************/
-be_local_closure(Rule_Matcher_Operator_tostring,   /* name */
+extern const bclass be_class_Rule_Matcher_Operator;
+be_local_closure(class_Rule_Matcher_Operator_tostring,   /* name */
   be_nested_proto(
     4,                          /* nstack */
     1,                          /* argc */
@@ -810,7 +808,7 @@ be_local_closure(Rule_Matcher_Operator_tostring,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher_Operator, 
     1,                          /* has constants */
     ( &(const bvalue[ 8]) {     /* constants */
     /* K0   */  be_nested_str(op_value),
@@ -859,7 +857,8 @@ be_local_closure(Rule_Matcher_Operator_tostring,   /* name */
 /********************************************************************
 ** Solidified function: init
 ********************************************************************/
-be_local_closure(Rule_Matcher_Operator_init,   /* name */
+extern const bclass be_class_Rule_Matcher_Operator;
+be_local_closure(class_Rule_Matcher_Operator_init,   /* name */
   be_nested_proto(
     7,                          /* nstack */
     3,                          /* argc */
@@ -867,7 +866,7 @@ be_local_closure(Rule_Matcher_Operator_init,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher_Operator, 
     1,                          /* has constants */
     ( &(const bvalue[ 1]) {     /* constants */
     /* K0   */  be_nested_str(op_parse),
@@ -895,29 +894,23 @@ be_local_class(Rule_Matcher_Operator,
     be_nested_map(7,
     ( (struct bmapnode*) &(const bmapnode[]) {
         { be_const_key(op_value, 6), be_const_var(2) },
-        { be_const_key(tostring, -1), be_const_closure(Rule_Matcher_Operator_tostring_closure) },
+        { be_const_key(tostring, -1), be_const_closure(class_Rule_Matcher_Operator_tostring_closure) },
         { be_const_key(op_func, 0), be_const_var(0) },
-        { be_const_key(match, 1), be_const_closure(Rule_Matcher_Operator_match_closure) },
+        { be_const_key(match, 1), be_const_closure(class_Rule_Matcher_Operator_match_closure) },
         { be_const_key(op_str, -1), be_const_var(1) },
-        { be_const_key(init, -1), be_const_closure(Rule_Matcher_Operator_init_closure) },
-        { be_const_key(op_parse, -1), be_const_closure(Rule_Matcher_Operator_op_parse_closure) },
+        { be_const_key(init, -1), be_const_closure(class_Rule_Matcher_Operator_init_closure) },
+        { be_const_key(op_parse, -1), be_const_closure(class_Rule_Matcher_Operator_op_parse_closure) },
     })),
     (bstring*) &be_const_str_Rule_Matcher_Operator
 );
-/*******************************************************************/
-
-void be_load_Rule_Matcher_Operator_class(bvm *vm) {
-    be_pushntvclass(vm, &be_class_Rule_Matcher_Operator);
-    be_setglobal(vm, "Rule_Matcher_Operator");
-    be_pop(vm, 1);
-}
 
 extern const bclass be_class_Rule_Matcher_Array;
 
 /********************************************************************
 ** Solidified function: init
 ********************************************************************/
-be_local_closure(Rule_Matcher_Array_init,   /* name */
+extern const bclass be_class_Rule_Matcher_Array;
+be_local_closure(class_Rule_Matcher_Array_init,   /* name */
   be_nested_proto(
     2,                          /* nstack */
     2,                          /* argc */
@@ -925,7 +918,7 @@ be_local_closure(Rule_Matcher_Array_init,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher_Array, 
     1,                          /* has constants */
     ( &(const bvalue[ 1]) {     /* constants */
     /* K0   */  be_nested_str(index),
@@ -944,7 +937,8 @@ be_local_closure(Rule_Matcher_Array_init,   /* name */
 /********************************************************************
 ** Solidified function: tostring
 ********************************************************************/
-be_local_closure(Rule_Matcher_Array_tostring,   /* name */
+extern const bclass be_class_Rule_Matcher_Array;
+be_local_closure(class_Rule_Matcher_Array_tostring,   /* name */
   be_nested_proto(
     3,                          /* nstack */
     1,                          /* argc */
@@ -952,7 +946,7 @@ be_local_closure(Rule_Matcher_Array_tostring,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher_Array, 
     1,                          /* has constants */
     ( &(const bvalue[ 3]) {     /* constants */
     /* K0   */  be_nested_str(_X3CMatcher_X20_X5B),
@@ -977,7 +971,8 @@ be_local_closure(Rule_Matcher_Array_tostring,   /* name */
 /********************************************************************
 ** Solidified function: match
 ********************************************************************/
-be_local_closure(Rule_Matcher_Array_match,   /* name */
+extern const bclass be_class_Rule_Matcher_Array;
+be_local_closure(class_Rule_Matcher_Array_match,   /* name */
   be_nested_proto(
     5,                          /* nstack */
     2,                          /* argc */
@@ -985,7 +980,7 @@ be_local_closure(Rule_Matcher_Array_match,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher_Array, 
     1,                          /* has constants */
     ( &(const bvalue[ 3]) {     /* constants */
     /* K0   */  be_nested_str(index),
@@ -1038,26 +1033,20 @@ be_local_class(Rule_Matcher_Array,
     be_nested_map(4,
     ( (struct bmapnode*) &(const bmapnode[]) {
         { be_const_key(index, -1), be_const_var(0) },
-        { be_const_key(tostring, -1), be_const_closure(Rule_Matcher_Array_tostring_closure) },
-        { be_const_key(match, -1), be_const_closure(Rule_Matcher_Array_match_closure) },
-        { be_const_key(init, 0), be_const_closure(Rule_Matcher_Array_init_closure) },
+        { be_const_key(tostring, -1), be_const_closure(class_Rule_Matcher_Array_tostring_closure) },
+        { be_const_key(match, -1), be_const_closure(class_Rule_Matcher_Array_match_closure) },
+        { be_const_key(init, 0), be_const_closure(class_Rule_Matcher_Array_init_closure) },
     })),
     (bstring*) &be_const_str_Rule_Matcher_Array
 );
-/*******************************************************************/
-
-void be_load_Rule_Matcher_Array_class(bvm *vm) {
-    be_pushntvclass(vm, &be_class_Rule_Matcher_Array);
-    be_setglobal(vm, "Rule_Matcher_Array");
-    be_pop(vm, 1);
-}
 
 extern const bclass be_class_Rule_Matcher_AND_List;
 
 /********************************************************************
 ** Solidified function: init
 ********************************************************************/
-be_local_closure(Rule_Matcher_AND_List_init,   /* name */
+extern const bclass be_class_Rule_Matcher_AND_List;
+be_local_closure(class_Rule_Matcher_AND_List_init,   /* name */
   be_nested_proto(
     2,                          /* nstack */
     2,                          /* argc */
@@ -1065,7 +1054,7 @@ be_local_closure(Rule_Matcher_AND_List_init,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher_AND_List, 
     1,                          /* has constants */
     ( &(const bvalue[ 1]) {     /* constants */
     /* K0   */  be_nested_str(and_list),
@@ -1084,7 +1073,8 @@ be_local_closure(Rule_Matcher_AND_List_init,   /* name */
 /********************************************************************
 ** Solidified function: tostring
 ********************************************************************/
-be_local_closure(Rule_Matcher_AND_List_tostring,   /* name */
+extern const bclass be_class_Rule_Matcher_AND_List;
+be_local_closure(class_Rule_Matcher_AND_List_tostring,   /* name */
   be_nested_proto(
     3,                          /* nstack */
     1,                          /* argc */
@@ -1092,7 +1082,7 @@ be_local_closure(Rule_Matcher_AND_List_tostring,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher_AND_List, 
     1,                          /* has constants */
     ( &(const bvalue[ 3]) {     /* constants */
     /* K0   */  be_nested_str(_X3CMatcher_AND_List_X20),
@@ -1117,7 +1107,8 @@ be_local_closure(Rule_Matcher_AND_List_tostring,   /* name */
 /********************************************************************
 ** Solidified function: match
 ********************************************************************/
-be_local_closure(Rule_Matcher_AND_List_match,   /* name */
+extern const bclass be_class_Rule_Matcher_AND_List;
+be_local_closure(class_Rule_Matcher_AND_List_match,   /* name */
   be_nested_proto(
     9,                          /* nstack */
     2,                          /* argc */
@@ -1125,7 +1116,7 @@ be_local_closure(Rule_Matcher_AND_List_match,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher_AND_List, 
     1,                          /* has constants */
     ( &(const bvalue[ 5]) {     /* constants */
     /* K0   */  be_const_int(0),
@@ -1176,26 +1167,20 @@ be_local_class(Rule_Matcher_AND_List,
     be_nested_map(4,
     ( (struct bmapnode*) &(const bmapnode[]) {
         { be_const_key(and_list, -1), be_const_var(0) },
-        { be_const_key(tostring, -1), be_const_closure(Rule_Matcher_AND_List_tostring_closure) },
-        { be_const_key(match, -1), be_const_closure(Rule_Matcher_AND_List_match_closure) },
-        { be_const_key(init, 0), be_const_closure(Rule_Matcher_AND_List_init_closure) },
+        { be_const_key(tostring, -1), be_const_closure(class_Rule_Matcher_AND_List_tostring_closure) },
+        { be_const_key(match, -1), be_const_closure(class_Rule_Matcher_AND_List_match_closure) },
+        { be_const_key(init, 0), be_const_closure(class_Rule_Matcher_AND_List_init_closure) },
     })),
     (bstring*) &be_const_str_Rule_Matcher_AND_List
 );
-/*******************************************************************/
-
-void be_load_Rule_Matcher_AND_List_class(bvm *vm) {
-    be_pushntvclass(vm, &be_class_Rule_Matcher_AND_List);
-    be_setglobal(vm, "Rule_Matcher_AND_List");
-    be_pop(vm, 1);
-}
 
 extern const bclass be_class_Rule_Matcher;
 
 /********************************************************************
 ** Solidified function: tostring
 ********************************************************************/
-be_local_closure(Rule_Matcher_tostring,   /* name */
+extern const bclass be_class_Rule_Matcher;
+be_local_closure(class_Rule_Matcher_tostring,   /* name */
   be_nested_proto(
     3,                          /* nstack */
     1,                          /* argc */
@@ -1203,7 +1188,7 @@ be_local_closure(Rule_Matcher_tostring,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher, 
     1,                          /* has constants */
     ( &(const bvalue[ 1]) {     /* constants */
     /* K0   */  be_nested_str(matchers),
@@ -1224,7 +1209,8 @@ be_local_closure(Rule_Matcher_tostring,   /* name */
 /********************************************************************
 ** Solidified function: init
 ********************************************************************/
-be_local_closure(Rule_Matcher_init,   /* name */
+extern const bclass be_class_Rule_Matcher;
+be_local_closure(class_Rule_Matcher_init,   /* name */
   be_nested_proto(
     4,                          /* nstack */
     4,                          /* argc */
@@ -1232,7 +1218,7 @@ be_local_closure(Rule_Matcher_init,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher, 
     1,                          /* has constants */
     ( &(const bvalue[ 3]) {     /* constants */
     /* K0   */  be_nested_str(rule),
@@ -1255,7 +1241,8 @@ be_local_closure(Rule_Matcher_init,   /* name */
 /********************************************************************
 ** Solidified function: parse
 ********************************************************************/
-be_local_closure(Rule_Matcher_parse,   /* name */
+extern const bclass be_class_Rule_Matcher;
+be_local_closure(class_Rule_Matcher_parse,   /* name */
   be_nested_proto(
     20,                          /* nstack */
     1,                          /* argc */
@@ -1263,7 +1250,7 @@ be_local_closure(Rule_Matcher_parse,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher, 
     1,                          /* has constants */
     ( &(const bvalue[26]) {     /* constants */
     /* K0   */  be_const_class(be_class_Rule_Matcher),
@@ -1452,7 +1439,8 @@ be_local_closure(Rule_Matcher_parse,   /* name */
 /********************************************************************
 ** Solidified function: match
 ********************************************************************/
-be_local_closure(Rule_Matcher_match,   /* name */
+extern const bclass be_class_Rule_Matcher;
+be_local_closure(class_Rule_Matcher_match,   /* name */
   be_nested_proto(
     7,                          /* nstack */
     2,                          /* argc */
@@ -1460,7 +1448,7 @@ be_local_closure(Rule_Matcher_match,   /* name */
     0,                          /* has upvals */
     NULL,                       /* no upvals */
     0,                          /* has sup protos */
-    NULL,                       /* no sub protos */
+    &be_class_Rule_Matcher, 
     1,                          /* has constants */
     ( &(const bvalue[ 4]) {     /* constants */
     /* K0   */  be_nested_str(matchers),
@@ -1513,9 +1501,9 @@ be_local_class(Rule_Matcher,
     be_nested_map(12,
     ( (struct bmapnode*) &(const bmapnode[]) {
         { be_const_key(Rule_Matcher_AND_List, -1), be_const_class(be_class_Rule_Matcher_AND_List) },
-        { be_const_key(tostring, 0), be_const_closure(Rule_Matcher_tostring_closure) },
-        { be_const_key(match, 6), be_const_closure(Rule_Matcher_match_closure) },
-        { be_const_key(init, 5), be_const_closure(Rule_Matcher_init_closure) },
+        { be_const_key(tostring, 0), be_const_closure(class_Rule_Matcher_tostring_closure) },
+        { be_const_key(match, 6), be_const_closure(class_Rule_Matcher_match_closure) },
+        { be_const_key(init, 5), be_const_closure(class_Rule_Matcher_init_closure) },
         { be_const_key(Rule_Matcher_Array, 11), be_const_class(be_class_Rule_Matcher_Array) },
         { be_const_key(rule, -1), be_const_var(0) },
         { be_const_key(Rule_Matcher_Key, -1), be_const_class(be_class_Rule_Matcher_Key) },
@@ -1523,16 +1511,9 @@ be_local_class(Rule_Matcher,
         { be_const_key(trigger, -1), be_const_var(1) },
         { be_const_key(Rule_Matcher_Wildcard, -1), be_const_class(be_class_Rule_Matcher_Wildcard) },
         { be_const_key(matchers, 2), be_const_var(2) },
-        { be_const_key(parse, -1), be_const_static_closure(Rule_Matcher_parse_closure) },
+        { be_const_key(parse, -1), be_const_static_closure(class_Rule_Matcher_parse_closure) },
     })),
     (bstring*) &be_const_str_Rule_Matcher
 );
-/*******************************************************************/
-
-void be_load_Rule_Matcher_class(bvm *vm) {
-    be_pushntvclass(vm, &be_class_Rule_Matcher);
-    be_setglobal(vm, "Rule_Matcher");
-    be_pop(vm, 1);
-}
 /********************************************************************/
 /* End of solidification */

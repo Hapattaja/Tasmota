@@ -197,7 +197,8 @@ extern int matter_publish_command(bvm *vm);
 #include "solidify/solidified_Matter_0_Inspect.h"
 
 extern const bclass be_class_Matter_TLV;   // need to declare it upfront because of circular reference
-#include "solidify/solidified_Matter_Path.h"
+#include "solidify/solidified_Matter_Path_0.h"
+#include "solidify/solidified_Matter_Path_1_Generator.h"
 #include "solidify/solidified_Matter_TLV.h"
 #include "solidify/solidified_Matter_IM_Data.h"
 #include "solidify/solidified_Matter_UDPServer.h"
@@ -252,8 +253,10 @@ extern const bclass be_class_Matter_TLV;   // need to declare it upfront because
 #include "solidify/solidified_Matter_Plugin_2_Sensor_Occupancy.h"
 #include "solidify/solidified_Matter_Plugin_2_Sensor_OnOff.h"
 #include "solidify/solidified_Matter_Plugin_2_Sensor_Contact.h"
+#include "solidify/solidified_Matter_Plugin_2_Sensor_Waterleak.h"
 #include "solidify/solidified_Matter_Plugin_9_Virt_Sensor_Contact.h"
 #include "solidify/solidified_Matter_Plugin_9_Virt_Sensor_Occupancy.h"
+#include "solidify/solidified_Matter_Plugin_9_Virt_Sensor_Waterleak.h"
 #include "solidify/solidified_Matter_Plugin_2_Bridge_HTTP.h"
 #include "solidify/solidified_Matter_Plugin_4_Bridge_OnOff.h"
 #include "solidify/solidified_Matter_Plugin_3_Bridge_Light0.h"
@@ -268,6 +271,7 @@ extern const bclass be_class_Matter_TLV;   // need to declare it upfront because
 #include "solidify/solidified_Matter_Plugin_3_Bridge_Sensor_Occupancy.h"
 #include "solidify/solidified_Matter_Plugin_3_Bridge_Sensor_Contact.h"
 #include "solidify/solidified_Matter_Plugin_4_Bridge_Sensor_Flow.h"
+#include "solidify/solidified_Matter_Plugin_3_Bridge_Sensor_Waterleak.h"
 #include "solidify/solidified_Matter_Plugin_z_All.h"
 #include "solidify/solidified_Matter_zz_Device.h"
 
@@ -306,8 +310,8 @@ module matter (scope: global, strings: weak) {
 
   Verhoeff, class(be_class_Matter_Verhoeff)
   Counter, class(be_class_Matter_Counter)
-  setmember, closure(matter_setmember_closure)
-  member, closure(matter_member_closure)
+  setmember, closure(module_matter_setmember_closure)
+  member, closure(module_matter_member_closure)
   get_ip_bytes, ctype_func(matter_get_ip_bytes)
   publish_command, func(matter_publish_command)
 
@@ -319,11 +323,11 @@ module matter (scope: global, strings: weak) {
   get_command_name, ctype_func(matter_get_command_name)
   get_opcode_name, ctype_func(matter_get_opcode_name)
   TLV, class(be_class_Matter_TLV)
-  sort, closure(matter_sort_closure)
-  jitter, closure(matter_jitter_closure)
-  inspect, closure(matter_inspect_closure)
-  consolidate_clusters, closure(matter_consolidate_clusters_closure)
-  UC_LIST, closure(matter_UC_LIST_closure)
+  sort, closure(module_matter_sort_closure)
+  jitter, closure(module_matter_jitter_closure)
+  inspect, closure(module_matter_inspect_closure)
+  consolidate_clusters, closure(module_matter_consolidate_clusters_closure)
+  UC_LIST, closure(module_matter_UC_LIST_closure)
   Profiler, class(be_class_Matter_Profiler)
 
   // Status codes
@@ -420,6 +424,7 @@ module matter (scope: global, strings: weak) {
 
   // Interation Model
   Path, class(be_class_Matter_Path)
+  PathGenerator, class(be_class_Matter_PathGenerator)
   IM_Status, class(be_class_Matter_IM_Status)
   IM_InvokeResponse, class(be_class_Matter_IM_InvokeResponse)
   IM_WriteResponse, class(be_class_Matter_IM_WriteResponse)

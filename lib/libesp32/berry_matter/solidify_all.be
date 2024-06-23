@@ -16,7 +16,6 @@ var globs = "path,ctypes_bytes_dyn,tasmota,ccronexpr,gpio,light,webclient,load,M
             "lv_clock,lv_clock_icon,lv_signal_arcs,lv_signal_bars,lv_wifi_arcs_icon,lv_wifi_arcs,"
             "lv_wifi_bars_icon,lv_wifi_bars,"
             "_lvgl,"
-            "int64"
 
 for g:string2.split(globs, ",")
   global.(g) = nil
@@ -80,6 +79,11 @@ def parse_file(fname, prefix_out)
       o = o.(subname)
       cl_name = obj_name
       obj_name = subname
+      if   (type(o) == 'class')
+        obj_name = 'class_' + obj_name
+      elif (type(o) == 'module')
+        obj_name = 'module_' + obj_name
+      end
     end
     solidify.dump(o, weak, fout, cl_name)
   end

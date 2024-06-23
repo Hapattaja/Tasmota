@@ -357,7 +357,7 @@ bool TfsFileExists(const char *fname){
 
   bool yes = ffsp->exists(fname);
   if (!yes) {
-    AddLog(LOG_LEVEL_DEBUG, PSTR("TFS: File '%s' not found"), fname +1);  // Skip leading slash
+    AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("TFS: File '%s' not found"), fname +1);  // Skip leading slash
   }
   return yes;
 }
@@ -431,7 +431,7 @@ bool TfsLoadFile(const char *fname, uint8_t *buf, uint32_t len) {
 
   File file = ffsp->open(fname, "r");
   if (!file) {
-    AddLog(LOG_LEVEL_INFO, PSTR("TFS: File '%s' not found"), fname +1);  // Skip leading slash
+    AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("TFS: File '%s' not found"), fname +1);  // Skip leading slash
     return false;
   }
 
@@ -594,6 +594,9 @@ bool _UfsJsonSettingsUpdate(const char* data) {
       if (buf[0] == '}') {
         bracket_count--;
       }
+      else if (buf[0] == '{') {        // Next bracket
+        bracket_count++;
+      }
     } else {
       if (buf[0] == '}') {             // Last bracket
         break;                         // End of file
@@ -678,19 +681,14 @@ bool UfsJsonSettingsWrite(const char* data) {
   char filename[14];
   snprintf_P(filename, sizeof(filename), PSTR(TASM_FILE_DRIVER), 0);  // /.drvset000
   if (!TfsFileExists(filename)) {
-    File ofile = ffsp->open(filename, "w");
-    if (!ofile) { return false; }      // Error - unable to open settings file
-    ofile.write((uint8_t*)data, strlen(data));
-    ofile.close();
-    return true;                       // State - Append success
+    return TfsSaveFile(filename, (uint8_t*)data, strlen(data));
   }
   return _UfsJsonSettingsUpdate(data); // State - 0 = Error, 1 = Append success
 }
 
 String UfsJsonSettingsRead(const char* key) {
   // Read: Input UserSet2
-  //       Output "" = Error, {"Param1":123,"Param2":"Text2"} = Data
-
+  //       Output "" = Error, {"Param1":123,"Param2":"Text2","Param3":[{"Param3a":1},{"Param3b":1}]} = Data
   String data = "";
   char filename[14];
   snprintf_P(filename, sizeof(filename), PSTR(TASM_FILE_DRIVER), 0);      // /.drvset000
@@ -725,6 +723,9 @@ String UfsJsonSettingsRead(const char* key) {
             index = 0;                 // End of data which is not mine
           }
         }
+      }
+      else if (buf[0] == '{') {        // Next bracket
+        bracket_count++;
       }
     } else {
       if (buf[0] == '}') {             // Last bracket
@@ -888,14 +889,19 @@ void UFSRename(void) {
 */
 #include "detail/RequestHandlersImpl.h"
 
+//#define SERVING_DEBUG
+
 // class to allow us to request auth when required.
 // StaticRequestHandler is in the above header
 class StaticRequestHandlerAuth : public StaticRequestHandler {
 public:
-    StaticRequestHandlerAuth(FS& fs, const char* path, const char* uri, const char* cache_header):
+    StaticRequestHandlerAuth(FS& fs, const char* path, const char* uri, const char* cache_header, bool requireAuth):
       StaticRequestHandler(fs, path, uri, cache_header)
     {
+      _requireAuth = requireAuth;
     }
+
+    bool _requireAuth;
 
     // we replace the handle method, 
     // and look for authentication only if we would serve the file.
@@ -905,8 +911,10 @@ public:
         if (!canHandle(requestMethod, requestUri))
             return false;
 
-        log_v("StaticRequestHandler::handle: request=%s _uri=%s\r\n", requestUri.c_str(), _uri.c_str());
-
+        //log_v("StaticRequestHandler::handle: request=%s _uri=%s\r\n", requestUri.c_str(), _uri.c_str());
+#ifdef SERVING_DEBUG
+        AddLog(LOG_LEVEL_DEBUG, PSTR("UFS: ::handle: request=%s _uri=%s"), requestUri.c_str(), _uri.c_str());
+#endif
         String path(_path);
 
         if (!_isFile) {
@@ -918,8 +926,9 @@ public:
             // Append whatever follows this URI in request to get the file path.
             path += requestUri.substring(_baseUriLength);
         }
-        log_v("StaticRequestHandler::handle: path=%s, isFile=%d\r\n", path.c_str(), _isFile);
-
+#ifdef SERVING_DEBUG
+        AddLog(LOG_LEVEL_DEBUG, PSTR("UFS: ::handle: path=%s, isFile=%d"), path.c_str(), _isFile);
+#endif
         String contentType = getContentType(path);
 
         // look for gz file, only if the original specified path is not a gz.  So part only works to send gzip via content encoding when a non compressed is asked for
@@ -931,11 +940,17 @@ public:
         }
 
         File f = _fs.open(path, "r");
-        if (!f || !f.available())
+        if (!f || !f.available()){
+            AddLog(LOG_LEVEL_DEBUG, PSTR("UFS: ::handler missing file?"));
             return false;
-
-        if (!WebAuthenticate()) {
+        }
+#ifdef SERVING_DEBUG
+        AddLog(LOG_LEVEL_DEBUG, PSTR("UFS: ::handler file open %d"), f.available());
+#endif
+        if (_requireAuth && !WebAuthenticate()) {
+#ifdef SERVING_DEBUG
           AddLog(LOG_LEVEL_ERROR, PSTR("UFS: serv of %s denied"), requestUri.c_str());
+#endif          
           server.requestAuthentication();
           return true;
         }
@@ -943,40 +958,76 @@ public:
         if (_cache_header.length() != 0)
             server.sendHeader("Cache-Control", _cache_header);
 
-        server.streamFile(f, contentType);
+#ifdef SERVING_DEBUG
+        AddLog(LOG_LEVEL_DEBUG, PSTR("UFS: ::handler sending"));
+#endif
+        uint8_t buff[512];
+        uint32_t bread;
+        uint32_t flen = f.available();
+        WiFiClient download_Client = server.client();
+        server.setContentLength(flen);   
+        server.send(200, contentType, "");
+
+        // transfer is about 150kb/s
+        uint32_t cnt = 0;
+        while (f.available()) {
+          bread = f.read(buff, sizeof(buff));
+          cnt += bread;
+#ifdef SERVING_DEBUG
+          //AddLog(LOG_LEVEL_DEBUG, PSTR("UFS: ::handler sending %d/%d"), cnt, flen);
+#endif          
+          uint32_t bw = download_Client.write((const char*)buff, bread);
+          if (!bw) { break; }
+          yield();
+        }
+#ifdef SERVING_DEBUG
+        AddLog(LOG_LEVEL_DEBUG, PSTR("UFS: ::handler sent %d/%d"), cnt, flen);
+#endif
+
+        if (cnt != flen){
+          AddLog(LOG_LEVEL_ERROR, PSTR("UFS: ::handler incomplete file send: sent %d/%d"), cnt, flen);
+        }
+
+        // It does seem that on lesser ESP32, this causes a problem?  A lockup...
+        //server.streamFile(f, contentType);
+
+        f.close();
+        download_Client.stop();
+
+#ifdef SERVING_DEBUG
+        AddLog(LOG_LEVEL_DEBUG, PSTR("UFS: ::handler done"));
+#endif        
         return true;
     }
 };
 
 void UFSServe(void) {
+  bool result = false;
   if (XdrvMailbox.data_len > 0) {
-    bool result = false;
     char *fpath = strtok(XdrvMailbox.data, ",");
     char *url = strtok(nullptr, ",");
     char *noauth = strtok(nullptr, ",");
     if (fpath && url) {
-      char t[] = "";
-      StaticRequestHandlerAuth *staticHandler;
-      if (noauth && *noauth == '1'){
-        staticHandler = (StaticRequestHandlerAuth *) new StaticRequestHandler(*ffsp, fpath, url, (char *)nullptr);
-      } else {
-        staticHandler = new StaticRequestHandlerAuth(*ffsp, fpath, url, (char *)nullptr);
-      }
-      if (staticHandler) {
-        //Webserver->serveStatic(url, *ffsp, fpath);
-        Webserver->addHandler(staticHandler);
-        Webserver->enableCORS(true);
-        result = true;
-      } else {
-        // could this happen?  only lack of memory.
-        result = false;
+      if (Webserver) { // fail if no Webserver yet.
+        StaticRequestHandlerAuth *staticHandler;
+        if (noauth && *noauth == '1'){
+          staticHandler = new StaticRequestHandlerAuth(*ffsp, fpath, url, (char *)nullptr, false);
+        } else {
+          staticHandler = new StaticRequestHandlerAuth(*ffsp, fpath, url, (char *)nullptr, true);
+        }
+        if (staticHandler) {
+          //Webserver->serveStatic(url, *ffsp, fpath);
+          Webserver->addHandler(staticHandler);
+          Webserver->enableCORS(true);
+          result = true;
+        }
       }
     }
-    if (!result) {
-      ResponseCmndFailed();
-    } else {
-      ResponseCmndDone();
-    }
+  }
+  if (!result) {
+    ResponseCmndFailed();
+  } else {
+    ResponseCmndDone();
   }
 }
 #endif // UFILESYS_STATIC_SERVING
@@ -1320,6 +1371,8 @@ void UfsListDir(char *path, uint8_t depth) {
                           HtmlEscape(name).c_str(), tstr.c_str(), entry.size(), delpath, editpath);
         }
         entry.close();
+
+        yield(); // trigger watchdog reset
       }
     }
     dir.close();

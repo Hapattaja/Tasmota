@@ -6,6 +6,7 @@
 ** https://github.com/Skiars/berry/blob/master/LICENSE
 ********************************************************************/
 #include "berry.h"
+#include "../../berry_custom/src/modules.h"
 
 /* this file contains the declaration of the module table. */
 
@@ -189,6 +190,7 @@ BERRY_LOCAL const bntvmodule_t* const be_module_table[] = {
     &be_native_module(matter),
 #endif // USE_MATTER_DEVICE
 #endif // TASMOTA
+    CUSTOM_NATIVE_MODULES
     /* user-defined modules register end */
     NULL /* do not remove */
 };
@@ -308,10 +310,12 @@ BERRY_LOCAL bclass_array be_class_table = {
     &be_native_class(AudioOpusDecoder),
     &be_native_class(AudioInputI2S),
 #endif // defined(USE_I2S_AUDIO_BERRY) && (ESP_IDF_VERSION_MAJOR >= 5)
+#endif // TASMOTA
+
 #if defined(USE_BERRY_INT64) || defined(USE_MATTER_DEVICE)
     &be_native_class(int64),
 #endif
-#endif // TASMOTA
+    CUSTOM_NATIVE_CLASSES
     NULL, /* do not remove */
 };
 

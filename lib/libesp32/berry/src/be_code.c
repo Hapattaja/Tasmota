@@ -84,7 +84,7 @@ static int codeABx(bfuncinfo *finfo, bopcode op, int a, int bx)
 /* returns false if the move operation happened, or true if there was a register optimization and `b` should be replaced by `a` */
 static bbool code_move(bfuncinfo *finfo, int a, int b)
 {
-    if (finfo->pc) {  /* If not the first instruction of the function */
+    if (finfo->pc > finfo->binfo->lastjmp) {  /* If not the first instruction of the function */
         binstruction *i = be_vector_end(&finfo->code);  /* get the last instruction */
         bopcode op = IGET_OP(*i);
         if (op <= OP_LDNIL) { /* binop or unop */
@@ -171,6 +171,13 @@ static int get_jump(bfuncinfo *finfo, int pc)
 
 static void patchlistaux(bfuncinfo *finfo, int list, int vtarget, int dtarget)
 {
+    /* mark the last destination point of a jump to avoid false register optimization */
+    if (vtarget > finfo->binfo->lastjmp) {
+        finfo->binfo->lastjmp = vtarget;
+    }
+    if (dtarget > finfo->binfo->lastjmp) {
+        finfo->binfo->lastjmp = dtarget;
+    }
     while (list != NO_JUMP) {
         int next = get_jump(finfo, list);
         if (isjumpbool(finfo, list)) {
@@ -688,7 +695,7 @@ static void setsfxvar(bfuncinfo *finfo, bopcode op, bexpdesc *e1, int src)
 /* e1 must be in a register and have a valid idx */
 /* if `keep_reg` is true, do not release register */
 /* return 1 if assignment was possible, 0 if type is not compatible */
-int be_code_setvar(bfuncinfo *finfo, bexpdesc *e1, bexpdesc *e2, bbool keep_reg)
+int be_code_setvar(bfuncinfo *finfo, bexpdesc *e1, bexpdesc *e2, bbool keep_reg, bbool ismethod)
 {
     /* free_e2 indicates special case where ETINDEX or ETMEMBER need to be freed if top of registers */
     bbool free_e2 = (e2->type == ETINDEX || e2->type == ETMEMBER) && (e2->v.ss.idx != e1->v.idx) && (e2->v.ss.idx == finfo->freereg - 1);
@@ -721,10 +728,14 @@ int be_code_setvar(bfuncinfo *finfo, bexpdesc *e1, bexpdesc *e2, bbool keep_reg)
         setsupvar(finfo, OP_SETUPV, e1, src);
         break;
     case ETMEMBER: /* store to member R(A).RK(B) <- RK(C) */
-        setsfxvar(finfo, OP_SETMBR, e1, src);
-        break;
     case ETINDEX: /* store to member R(A)[RK(B)] <- RK(C) */
-        setsfxvar(finfo, OP_SETIDX, e1, src);
+        setsfxvar(finfo, (e1->type == ETMEMBER) ? (ismethod ? OP_SETMET : OP_SETMBR) : OP_SETIDX, e1, src);
+        if (keep_reg && e2->type == ETREG && e1->v.ss.obj >= be_list_count(finfo->local)) {
+            /* special case of walrus assignemnt when we need to recreate an ETREG */
+            code_move(finfo, e1->v.ss.obj, src);    /* move from ETREG to MEMBER instance*/
+            free_expreg(finfo, e2); /* free source (checks only ETREG) */
+            e2->v.idx = e1->v.ss.obj; /* update to new register */
+        }
         break;
     default:
         return 1;
@@ -912,7 +923,7 @@ void be_code_import(bfuncinfo *finfo, bexpdesc *m, bexpdesc *v)
         codeABC(finfo, OP_IMPORT, dst, src, 0);
         m->type = ETREG;
         m->v.idx = dst;
-        be_code_setvar(finfo, v, m, bfalse);
+        be_code_setvar(finfo, v, m, bfalse, bfalse);
     }
 }
 
