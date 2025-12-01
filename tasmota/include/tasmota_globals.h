@@ -47,8 +47,11 @@ extern "C" int startWaveformClockCycles(uint8_t pin, uint32_t highCcys, uint32_t
   uint32_t runTimeCcys, int8_t alignPhase, uint32_t phaseOffsetCcys, bool autoPwm);
 extern "C" void setTimer1Callback(uint32_t (*fn)());
 #ifdef USE_SERIAL_BRIDGE
-void SerialBridgePrintf(PGM_P formatP, ...);
+void SerialBridgeWrite(char *line, uint32_t len);
 #endif
+#ifdef USE_TELNET
+void TelnetWrite(char *line, uint32_t len);
+#endif  // USE_TELNET
 #ifdef USE_INFLUXDB
 void InfluxDbProcess(bool use_copy = false);
 #endif
@@ -145,15 +148,15 @@ const char WIFI_HOSTNAME[] = WIFI_DEFAULT_HOSTNAME;    // Override by user_confi
 \*-------------------------------------------------------------------------------------------*/
 
 /*-------------------------------------------------------------------------------------------*\
- * Start ESP32-C3/C6 specific parameters - disable features not present in ESP32-C3/C6
+ * Start ESP32-C3/C5/C6 specific parameters - disable features not present in ESP32-C3/C5/C6
 \*-------------------------------------------------------------------------------------------*/
 
-#if CONFIG_IDF_TARGET_ESP32C3 || CONFIG_IDF_TARGET_ESP32C6  // ESP32-C3/C6
+#if CONFIG_IDF_TARGET_ESP32C3 || CONFIG_IDF_TARGET_ESP32C5 || CONFIG_IDF_TARGET_ESP32C6   // ESP32-C3/C5/C6
 //#ifdef USE_ETHERNET
-//#undef USE_ETHERNET                                // ESP32-C3/C6 does not support ethernet
+//#undef USE_ETHERNET                                // ESP32-C3/C5/C6 does not support ethernet
 //#endif
 
-#endif  // CONFIG_IDF_TARGET_ESP32C3/C6
+#endif  // CONFIG_IDF_TARGET_ESP32C3/C5/C6
 
 /*-------------------------------------------------------------------------------------------*\
  * End ESP32-C3 specific parameters
@@ -193,6 +196,13 @@ const char WIFI_HOSTNAME[] = WIFI_DEFAULT_HOSTNAME;    // Override by user_confi
 #else
 #define ARDUINO_CORE_RELEASE        ARDUINO_ESP32_RELEASE
 #endif  // ARDUINO_ESP32_RELEASE
+
+#ifdef USE_I2C_BUS2                                // If defined for ESP8266 undefine first
+#undef USE_I2C_BUS2
+#endif  // USE_I2C_BUS2
+#if SOC_HP_I2C_NUM > 1
+#define USE_I2C_BUS2                               // Redefine based on hardware support
+#endif  // SOC_HP_I2C_NUM
 
 // Hardware has no ESP32
 #undef USE_EXS_DIMMER
@@ -496,13 +506,16 @@ const char WIFI_HOSTNAME[] = WIFI_DEFAULT_HOSTNAME;    // Override by user_confi
 #ifndef COLOR_TITLE_TEXT
 #define COLOR_TITLE_TEXT			      COLOR_TEXT // Title text color defaults to global text color either dark or light
 #endif
+#ifndef COLOR_BUTTON_OFF
+#define COLOR_BUTTON_OFF			      "#08405e"  // Button color when off - Darkest blueish
+#endif
 
 enum WebColors {
   COL_TEXT, COL_BACKGROUND, COL_FORM,
   COL_INPUT_TEXT, COL_INPUT, COL_CONSOLE_TEXT, COL_CONSOLE,
   COL_TEXT_WARNING, COL_TEXT_SUCCESS,
   COL_BUTTON_TEXT, COL_BUTTON, COL_BUTTON_HOVER, COL_BUTTON_RESET, COL_BUTTON_RESET_HOVER, COL_BUTTON_SAVE, COL_BUTTON_SAVE_HOVER,
-  COL_TIMER_TAB_TEXT, COL_TIMER_TAB_BACKGROUND, COL_TITLE,
+  COL_TIMER_TAB_TEXT, COL_TIMER_TAB_BACKGROUND, COL_TITLE, COL_BUTTON_OFF,
   COL_LAST };
 
 const char kWebColors[] PROGMEM =
@@ -510,7 +523,7 @@ const char kWebColors[] PROGMEM =
   COLOR_INPUT_TEXT "|" COLOR_INPUT "|" COLOR_CONSOLE_TEXT "|" COLOR_CONSOLE "|"
   COLOR_TEXT_WARNING "|" COLOR_TEXT_SUCCESS "|"
   COLOR_BUTTON_TEXT "|" COLOR_BUTTON "|" COLOR_BUTTON_HOVER "|" COLOR_BUTTON_RESET "|" COLOR_BUTTON_RESET_HOVER "|" COLOR_BUTTON_SAVE "|" COLOR_BUTTON_SAVE_HOVER "|"
-  COLOR_TIMER_TAB_TEXT "|" COLOR_TIMER_TAB_BACKGROUND "|" COLOR_TITLE_TEXT;
+  COLOR_TIMER_TAB_TEXT "|" COLOR_TIMER_TAB_BACKGROUND "|" COLOR_TITLE_TEXT "|" COLOR_BUTTON_OFF;
 
 /*********************************************************************************************\
  * Macros
@@ -533,6 +546,7 @@ const char kWebColors[] PROGMEM =
 
 #define AGPIO(x) ((x)<<5)
 #define BGPIO(x) ((x)>>5)
+#define AGMAX(x) ((x)?(x-1):0)
 
 #ifdef USE_DEVICE_GROUPS
 #define SendDeviceGroupMessage(DEVICE_INDEX, REQUEST_TYPE, ...) _SendDeviceGroupMessage(DEVICE_INDEX, REQUEST_TYPE, __VA_ARGS__, 0)

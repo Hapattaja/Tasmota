@@ -546,6 +546,10 @@ bool SettingsConfigRestore(void) {
     valid_settings = (5 == settings_buffer[0xF36]);  // Settings->config_version ESP32C2
 #elif CONFIG_IDF_TARGET_ESP32C6
     valid_settings = (6 == settings_buffer[0xF36]);  // Settings->config_version ESP32C6
+#elif CONFIG_IDF_TARGET_ESP32P4
+    valid_settings = (7 == settings_buffer[0xF36]);  // Settings->config_version ESP32P4
+#elif CONFIG_IDF_TARGET_ESP32C5
+    valid_settings = (8 == settings_buffer[0xF36]);  // Settings->config_version ESP32C5
 #else
     valid_settings = (1 == settings_buffer[0xF36]);  // Settings->config_version ESP32 all other
 #endif  // CONFIG_IDF_TARGET_ESP32S3
@@ -687,9 +691,11 @@ char* SettingsText(uint32_t index) {
 
   if (index >= SET_MAX) { // Index above SET_MAX are not stored in Settings
 #ifdef USE_WEBSERVER
+#ifndef FIRMWARE_MINIMAL
     if (SET_BUTTON17 <= index && index <= SET_BUTTON32)
       return (char*)GetWebButton(index-SET_BUTTON17+16);
-#endif
+#endif  // not FIRMWARE_MINIMAL
+#endif  // USE_WEBSERVER
     position += settings_text_size -1;  // Setting not supported - internal error - return empty string
   } else {
     SettingsUpdateFinished();
@@ -926,6 +932,14 @@ void SettingsSdkErase(void) {
 
 /********************************************************************************************/
 
+void SettingsMinimum(void) {
+  // Set life-saving parameters if out-of-range due to reconfig Settings Area
+  if (Settings->dns_timeout < 100) { Settings->dns_timeout = DNS_TIMEOUT; }
+  if (Settings->mqtt_keepalive < 1) { Settings->mqtt_keepalive = MQTT_KEEPALIVE; }
+  if (Settings->mqtt_socket_timeout < 1) { Settings->mqtt_socket_timeout = MQTT_SOCKET_TIMEOUT; }
+  if (Settings->mqtt_wifi_timeout < 1) { Settings->mqtt_wifi_timeout = MQTT_WIFI_CLIENT_TIMEOUT / 100; }
+}
+
 void SettingsDefault(void) {
   AddLog(LOG_LEVEL_INFO, PSTR(D_LOG_CONFIG D_USE_DEFAULTS));
   SettingsDefaultSet1();
@@ -976,6 +990,10 @@ void SettingsDefaultSet2(void) {
   Settings->config_version = 5;  // ESP32C2
 #elif CONFIG_IDF_TARGET_ESP32C6
   Settings->config_version = 6;  // ESP32C6
+#elif CONFIG_IDF_TARGET_ESP32P4
+  Settings->config_version = 7;  // ESP32P4
+#elif CONFIG_IDF_TARGET_ESP32C5
+  Settings->config_version = 8;  // ESP32C5
 #else
   Settings->config_version = 1;  // ESP32
 #endif  // CONFIG_IDF_TARGET_ESP32S3
@@ -1095,7 +1113,10 @@ void SettingsDefaultSet2(void) {
   flag2.emulation |= EMULATION;
   flag4.alexa_gen_1 |= EMULATION_HUE_1ST_GEN;
 #endif // FIRMWARE_MINIMAL
+  flag5.gui_module_name |= GUI_NOSHOW_MODULE;
+  flag6.gui_device_name |= GUI_NOSHOW_DEVICENAME;
   flag3.gui_hostname_ip |= GUI_SHOW_HOSTNAME;
+  flag6.gui_no_state_text |= GUI_NOSHOW_STATETEXT;
   flag3.mdns_enabled |= MDNS_ENABLED;
   Settings->webserver = WEB_SERVER;
   Settings->weblog_level = WEB_LOG_LEVEL;
@@ -1137,7 +1158,7 @@ void SettingsDefaultSet2(void) {
   flag5.mqtt_status_retain |= MQTT_STATUS_RETAIN;
   flag5.mqtt_switches |= MQTT_SWITCHES;
   flag5.mqtt_persistent |= ~MQTT_CLEAN_SESSION;
-  flag6.mqtt_disable_sserialrec |= MQTT_DISABLE_SSERIALRECEIVED;
+  flag6.mqtt_disable_publish |= MQTT_DISABLE_SSERIALRECEIVED;
   flag6.mqtt_disable_modbus |= MQTT_DISABLE_MODBUSRECEIVED;
 //  flag.mqtt_serial |= 0;
   flag.device_index_enable |= MQTT_POWER_FORMAT;
@@ -1146,6 +1167,7 @@ void SettingsDefaultSet2(void) {
   flag3.no_hold_retain |= MQTT_NO_HOLD_RETAIN;
   flag3.use_underscore |= MQTT_INDEX_SEPARATOR;
   flag3.grouptopic_mode |= MQTT_GROUPTOPIC_FORMAT;
+  flag4.only_json_message |= MQTT_ONLY_JSON_OUTPUT;
   SettingsUpdateText(SET_MQTT_HOST, MQTT_HOST);
   Settings->mqtt_port = MQTT_PORT;
   SettingsUpdateText(SET_MQTT_CLIENT, PSTR(MQTT_CLIENT_ID));
@@ -1208,9 +1230,9 @@ void SettingsDefaultSet2(void) {
 //  Settings->energy_max_power_limit = 0;                            // MaxPowerLimit
   Settings->energy_max_power_limit_hold = MAX_POWER_HOLD;
   Settings->energy_max_power_limit_window = MAX_POWER_WINDOW;
-//  Settings->energy_max_power_safe_limit = 0;                       // MaxSafePowerLimit
-  Settings->energy_max_power_safe_limit_hold = SAFE_POWER_HOLD;
-  Settings->energy_max_power_safe_limit_window = SAFE_POWER_WINDOW;
+//  Settings->ex_energy_max_power_safe_limit = 0;                    // MaxSafePowerLimit
+//  Settings->ex_energy_max_power_safe_limit_hold = SAFE_POWER_HOLD;
+//  Settings->ex_energy_max_power_safe_limit_window = SAFE_POWER_WINDOW;
 //  Settings->energy_max_energy = 0;                                 // MaxEnergy
 //  Settings->energy_max_energy_start = 0;                           // MaxEnergyStart
 //  Settings->energy_kWhtotal_ph[0] = 0;
@@ -1234,7 +1256,6 @@ void SettingsDefaultSet2(void) {
 
   // RF Bridge
 #ifndef FIRMWARE_MINIMAL    // not needed in minimal/safeboot because of disabled feature and Settings are not saved anyways
-  flag.rf_receive_decimal |= RF_DATA_RADIX;
 //  for (uint32_t i = 0; i < 17; i++) { Settings->rf_code[i][0] = 0; }
   memcpy_P(Settings->rf_code[0], kDefaultRfCode, 9);
 #endif // FIRMWARE_MINIMAL
@@ -1425,6 +1446,9 @@ void SettingsDefaultSet2(void) {
   #endif
 #endif // FIRMWARE_MINIMAL
 
+  // Matter
+  flag6.matter_enabled |= MATTER_ENABLED;
+
   Settings->flag = flag;
   Settings->flag2 = flag2;
   Settings->flag3 = flag3;
@@ -1541,7 +1565,7 @@ void SettingsDelta(void) {
       SettingsUpdateText(SET_STAPWD1, temp41);
       SettingsUpdateText(SET_STAPWD2, temp42);
 
-#if defined(USE_MQTT_TLS) && defined(USE_MQTT_AWS_IOT)
+#if defined(USE_MQTT_TLS) && defined(USE_MQTT_CLIENT_CERT)
       if (!strlen(Settings->ex_mqtt_user)) {
         SettingsUpdateText(SET_MQTT_HOST, temp7);
         SettingsUpdateText(SET_MQTT_USER, temp9);
@@ -1551,10 +1575,10 @@ void SettingsDelta(void) {
         SettingsUpdateText(SET_MQTT_HOST, aws_mqtt_host);
         SettingsUpdateText(SET_MQTT_USER, "");
       }
-#else  // No USE_MQTT_TLS and USE_MQTT_AWS_IOT
+#else  // No USE_MQTT_TLS and USE_MQTT_CLIENT_CERT
       SettingsUpdateText(SET_MQTT_HOST, temp7);
       SettingsUpdateText(SET_MQTT_USER, temp9);
-#endif  // USE_MQTT_TLS and USE_MQTT_AWS_IOT
+#endif  // USE_MQTT_TLS and USE_MQTT_CLIENT_CERT
       SettingsUpdateText(SET_MQTT_PWD, temp10);
       SettingsUpdateText(SET_MQTT_TOPIC, temp11);
     }
@@ -1582,6 +1606,10 @@ void SettingsDelta(void) {
       Settings->config_version = 5;  // ESP32C2
 #elif CONFIG_IDF_TARGET_ESP32C6
       Settings->config_version = 6;  // ESP32C6
+#elif CONFIG_IDF_TARGET_ESP32P4
+      Settings->config_version = 7;  // ESP32P4
+#elif CONFIG_IDF_TARGET_ESP32C5
+      Settings->config_version = 8;  // ESP32C5
 #else
       Settings->config_version = 1;  // ESP32
 #endif  // CONFIG_IDF_TARGET_ESP32S3
@@ -1723,12 +1751,19 @@ void SettingsDelta(void) {
     if (Settings->version < 0x0A010003) {  // 10.1.0.3
       Settings->sserial_config = Settings->serial_config;
     }
+
+    // Change CalVer (2022.01.1-4 = 0x14160101) to SemVer (10.1.0.4-7 = 0x0A010004)
+    uint32_t version2022 = Settings->version & 0x00FF0000;
+    if (0x00160000 == version2022) {       // Version x.22.x.x is not likely to appear
+      Settings->version = 0x0A010005;      // Choose this as 0x0A010006 has a change following
+    }
+
     if (Settings->version < 0x0A010006) {  // 10.1.0.6
       Settings->web_time_start = 0;
       Settings->web_time_end = 0;
     }
     if (Settings->version < 0x0B000003) {  // 11.0.0.3
-       memcpy(Settings->pulse_timer, Settings->ex_pulse_timer, 16);
+       memcpy(Settings->pulse_timer, (uint16_t*)&Settings->weight_precision, 16);
     }
     if (Settings->version < 0x0B000006) {  // 11.0.0.6
         Settings->weight_absconv_a = 0;
@@ -1814,7 +1849,44 @@ void SettingsDelta(void) {
       Settings->power_lock = 0;
     }
     if (Settings->version < 0x0E000004) {  // 14.0.0.4
-      Settings->tcp_baudrate = (uint16_t)Settings->ex_tcp_baudrate * 4;
+      Settings->tcp_baudrate = (uint16_t)Settings->sserial_mode * 4;
+    }
+    if (Settings->version < 0x0E010002) {  // 14.1.0.2
+      Settings->sserial_mode = Settings->sbflag1.ex_serbridge_console;
+    }
+    if (Settings->version < 0x0E020003) {  // 14.2.0.3
+      Settings->flag3.sb_receive_invert = 0;  // SetOption69  - (Serial) Invert Serial receive on SerialBridge
+    }
+    if (Settings->version < 0x0E020004) {  // 14.2.0.4
+      Settings->weight_precision = 0;      // Initialized by HX711 driver
+    }
+    if (Settings->version < 0x0E030002) {  // 14.3.0.2
+      Settings->sbflag1.dali_light = 1;
+    }
+    if (Settings->version < 0x0E030004) {  // 14.3.0.4
+      Settings->mbflag2.dali_group_sliders = 2;
+    }
+    if (Settings->version < 0x0E030006) {  // 14.3.0.6
+      char scolor[10];
+      WebHexCode(COL_BUTTON_OFF, GetTextIndexed(scolor, sizeof(scolor), COL_BUTTON_OFF, kWebColors));
+    }
+    if (Settings->version < 0x0E030007) {  // 14.3.0.7
+      // move up uint8_t knx_CB_registered from 4A8 to 533
+      memmove_P((uint8_t*)&Settings->knx_CB_registered, (uint8_t*)&Settings->switchmode, 1);
+      // move up uint8_t global_sensor_index[3] from 4C5 to 53C
+      memmove_P((uint8_t*)&Settings->global_sensor_index, (uint8_t*)&Settings->switchmode +29, 3);
+      // move dn uint8_t switchmode[MAX_SWITCHES_SET] from 4A9 to 4A8
+      memmove_P((uint8_t*)&Settings->switchmode, (uint8_t*)&Settings->switchmode +1, 28);
+      for (uint32_t i = 28; i < MAX_SWITCHES_SET; i++) {
+        Settings->switchmode[i] = SWITCH_MODE;
+      }
+      // move up int8_t shutter_tilt_pos[MAX_SHUTTERS], uint16_t influxdb_period and uint16_t rf_duplicate_timefrom 51C to 534
+      memmove_P((uint8_t*)&Settings->shutter_tilt_pos, (uint8_t*)&Settings->shutter_tilt_config +12, 8);
+      // move up int8_t shutter_tilt_config[5][MAX_SHUTTERS] from 508 to 510
+      memmove_P((uint8_t*)&Settings->shutter_tilt_config, (uint8_t*)&Settings->shutter_tilt_config -8, 20);
+      for (uint32_t i = 14; i < MAX_INTERLOCKS_SET; i++) {
+        Settings->interlock[i] = 0;
+      }
     }
 
     Settings->version = TASMOTA_VERSION;

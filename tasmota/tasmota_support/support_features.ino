@@ -348,8 +348,8 @@ constexpr uint32_t feature[] = {
 #if defined(USE_ENERGY_SENSOR) && defined(USE_PZEM_AC)
   0x00000200 |  // xnrg_05_pzem_ac.ino
 #endif
-#if defined(USE_I2C) && defined(USE_DS3231)
-  0x00000400 |  // xsns_33_ds3231.ino
+#if defined(USE_I2C) && defined(USE_RTC_CHIPS) && defined(USE_DS3231)
+  0x00000400 |  // xdrv_56_rtc_chips.ino
 #endif
 #ifdef USE_HX711
   0x00000800 |  // xsns_34_hx711.ino
@@ -719,8 +719,8 @@ constexpr uint32_t feature[] = {
 #ifdef USE_BERRY
   0x00000008 |  // xdrv_52_9_berry.ino
 #endif
-#if defined(USE_I2C) && defined(USE_BM8563)
-  0x00000010 |  // xdrv_56_BM8563_RTC.ino
+#if defined(USE_I2C) && defined(USE_RTC_CHIPS) && defined(USE_BM8563)
+  0x00000010 |  // xdrv_56_rtc_chips.ino
 #endif
 #if defined(USE_ENERGY_SENSOR) && defined(USE_ENERGY_DUMMY)
   0x00000020 |  // xnrg_30_dummy.ino
@@ -779,7 +779,7 @@ constexpr uint32_t feature[] = {
 #if defined(USE_ENERGY_SENSOR) && defined(USE_I2C) && defined(USE_ADE7880)
   0x00800000 |  // xnrg_23_ade7880.ino
 #endif
-#if defined(USE_I2C) && defined(USE_PCF85363)
+#if defined(USE_I2C) && defined(USE_RTC_CHIPS) && defined(USE_PCF85363)
   0x01000000 |  // xdrv_56_rtc_chips.ino
 #endif
 #if defined(USE_I2C) && defined(USE_DS3502)
@@ -823,7 +823,7 @@ constexpr uint32_t feature[] = {
   0x00000020 |  // xdrv_88_esp32_shelly_pro.ino
 #endif
 #ifdef USE_DALI
-  0x00000040 |  // xdrv_89_esp32_dali.ino
+  0x00000040 |  // xdrv_75_dali.ino
 #endif
 #if defined(USE_LIGHT) && defined(USE_BP1658CJ)
   0x00000080 |  // xlgt_10_bp1658cj.ino
@@ -919,19 +919,45 @@ constexpr uint32_t feature[] = {
 #if defined(USE_I2C) && defined(USE_SPL06_007)
   0x00000020 |  // xsns_25_spl006-7_sensor.ino
 #endif
-//  0x00000040 |  // 
-//  0x00000080 |  // 
-//  0x00000100 |  // 
-//  0x00000200 |  // 
-//  0x00000400 |  // 
-//  0x00000800 |  // 
-//  0x00001000 |  // 
-//  0x00002000 |  // 
-//  0x00004000 |  // 
-//  0x00008000 |  // 
-//  0x00010000 |  // 
-//  0x00020000 |  // 
-//  0x00040000 |  // 
+#if defined(USE_I2C) && defined(USE_QMP6988)
+  0x00000040 |  // xsns_28_qmp6988.ino
+#endif
+#ifdef USE_WOOLIIS
+  0x00000080 |  // xsns_115_wooliis.ino
+#endif
+#if defined(USE_I2C) && defined(USE_HX711_M5SCALES)
+  0x00000100 |  // xsns_34_hx711.ino
+#endif
+#if defined(USE_I2C) && defined(USE_RTC_CHIPS) && (defined(USE_RX8010) || defined(USE_RX8030))
+  0x00000200 |  // xdrv_56_rtc_chips.ino
+#endif
+#if defined(USE_I2C) && defined(USE_RTC_CHIPS) && defined(USE_PCF85063)
+  0x00000400 |  // xdrv_56_rtc_chips.ino
+#endif
+#ifdef USE_ESP32_TWAI
+  0x00000800 |  // xdrv_91_esp32_twai.ino
+#endif
+#ifdef USE_C8_CO2_5K
+  0x00001000 |  // xsns_117_c8_co2_5k.ino
+#endif
+#ifdef USE_WIZMOTE
+  0x00002000 |  // xdrv_77_wizmote.ino
+#endif
+#if defined(USE_ENERGY_SENSOR) && defined(USE_V9240)
+  0x00004000 |  // xnrg_25_v9240.ino
+#endif
+#ifdef USE_TELNET
+  0x00008000 |  // xdrv_80_telnet.ino
+#endif
+#ifdef USE_XYZMODEM
+  0x00010000 |  // xdrv_120_xyzmodem.ino
+#endif  
+#ifdef USE_WIREGUARD
+  0x00020000 |  // xdrv_80_wireguard_client
+#endif  
+#if defined(USE_I2C) && defined(USE_AP33772S)
+  0x00040000 |  // xdrv_119_i2c_ap33772s
+#endif  
 //  0x00080000 |  // 
 //  0x00100000 |  // 
 //  0x00200000 |  // 

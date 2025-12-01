@@ -159,6 +159,18 @@ enum XdspFunctions { FUNC_DISPLAY_INIT_DRIVER, FUNC_DISPLAY_INIT, FUNC_DISPLAY_E
 
 enum DisplayInitModes { DISPLAY_INIT_MODE, DISPLAY_INIT_PARTIAL, DISPLAY_INIT_FULL };
 
+enum DisplayModes { 
+  DM_USER_CONTROL,         // 0
+  DM_TIME,
+  DM_LOCAL_SENSORS,
+  DM_TIME_LOCAL_SENSORS,
+  DM_MQTT_SENSORS,
+  DM_TIME_MQTT_SENSORS,
+  DM_MQTT_TOPIC_UPTIME,
+  DM_MQTT_HOSTNAME_IPADDRESS,
+  DM_MAX
+};
+
 const char kDisplayCommands[] PROGMEM = D_PRFX_DISPLAY "|"  // Prefix
   "|" D_CMND_DISP_MODEL "|" D_CMND_DISP_TYPE "|" D_CMND_DISP_WIDTH "|" D_CMND_DISP_HEIGHT "|" D_CMND_DISP_MODE "|"
   D_CMND_DISP_INVERT "|" D_CMND_DISP_REFRESH "|" D_CMND_DISP_DIMMER "|" D_CMND_DISP_COLS "|" D_CMND_DISP_ROWS "|"
@@ -184,6 +196,10 @@ void (* const DisplayCommand[])(void) PROGMEM = {
 };
 
 #ifdef USE_GRAPH
+
+#ifndef NUM_GRAPHS
+#define NUM_GRAPHS      4                    // Max 16
+#endif
 
 typedef union {
   uint8_t data;
@@ -256,6 +272,7 @@ char **disp_log_buffer;
 char **disp_screen_buffer;
 char disp_temp[2];    // C or F
 char disp_pres[5];   // hPa or mmHg
+char disp_topic[TOPSZ];
 
 uint8_t disp_log_buffer_cols = 0;
 uint8_t disp_log_buffer_idx = 0;
@@ -268,30 +285,41 @@ bool disp_subscribed = false;
 
 /*********************************************************************************************/
 
-void DisplayInit(uint8_t mode)
-{
-  if (renderer)  {
-    renderer->DisplayInit(mode, Settings->display_size, Settings->display_rotate, Settings->display_font);
+uint32_t DisplayDevices(void) {
+  return (disp_device) ? 1 : 0;
+}
+
+/*********************************************************************************************/
+
+void DisplayClear(void) {
+  if (renderer) {
+    renderer->fillScreen(bg_color);
+  } else {
+    XdspCall(FUNC_DISPLAY_CLEAR);
   }
-  else {
+}
+
+void DisplayInit(uint8_t mode) {
+  if (renderer) {
+    renderer->DisplayInit(mode, Settings->display_size, Settings->display_rotate, Settings->display_font);
+  } else {
     dsp_init = mode;
     XdspCall(FUNC_DISPLAY_INIT);
   }
+  DisplayClear();
 }
 
-void DisplayClear(void)
-{
-  XdspCall(FUNC_DISPLAY_CLEAR);
-}
-
-void DisplayDrawStringAt(uint16_t x, uint16_t y, char *str, uint16_t color, uint8_t flag)
-{
-  dsp_x = x;
-  dsp_y = y;
-  dsp_str = str;
-  dsp_color = color;
-  dsp_flag = flag;
-  XdspCall(FUNC_DISPLAY_DRAW_STRING);
+void DisplayDrawStringAt(uint16_t x, uint16_t y, char *str, uint16_t color, uint8_t flag) {
+  if (renderer) {
+    renderer->DrawStringAt(x, y, str, color, flag);
+  } else {
+    dsp_x = x;
+    dsp_y = y;
+    dsp_str = str;
+    dsp_color = color;
+    dsp_flag = flag;
+    XdspCall(FUNC_DISPLAY_DRAW_STRING);
+  }
 }
 
 void DisplayOnOff(uint8_t on) {
@@ -482,18 +510,22 @@ void DisplayText(void)
         dp -= decode_te(linebuf);
         if ((uint32_t)dp - (uint32_t)linebuf) {
           if (!fill) { *dp = 0; }
+#ifdef USE_DISPLAY_MODES1TO5
+          if (!Settings->display_mode) {
+#endif  // USE_DISPLAY_MODES1TO5
           if (col > 0 && lin > 0) {
             // use col and lin
-            if (!renderer) DisplayDrawStringAt(col, lin, linebuf, fg_color, 1);
-            else renderer->DrawStringAt(col, lin, linebuf, fg_color, 1);
+            DisplayDrawStringAt(col, lin, linebuf, fg_color, 1);
           } else {
             // use disp_xpos, disp_ypos
-            if (!renderer) DisplayDrawStringAt(disp_xpos, disp_ypos, linebuf, fg_color, 0);
-            else renderer->DrawStringAt(disp_xpos, disp_ypos, linebuf, fg_color, 0);
+            DisplayDrawStringAt(disp_xpos, disp_ypos, linebuf, fg_color, 0);
           }
           memset(linebuf, ' ', sizeof(linebuf));
           linebuf[sizeof(linebuf)-1] = 0;
           dp = linebuf;
+#ifdef USE_DISPLAY_MODES1TO5
+          }
+#endif  // USE_DISPLAY_MODES1TO5
         }
       } else {
         // copy chars
@@ -513,8 +545,7 @@ void DisplayText(void)
         switch (*cp++) {
           case 'z':
             // clear display
-            if (!renderer) DisplayClear();
-            else renderer->fillScreen(bg_color);
+            DisplayClear();
             disp_xpos = 0;
             disp_ypos = 0;
             col = 0;
@@ -1225,14 +1256,17 @@ extern FS *ffsp;
         // right align
         alignright(linebuf);
       }
+#ifdef USE_DISPLAY_MODES1TO5
+      if (Settings->display_mode) {
+        DisplayLogBufferAdd(linebuf);
+      } else
+#endif  // USE_DISPLAY_MODES1TO5
       if (col > 0 && lin > 0) {
         // use col and lin
-        if (!renderer) DisplayDrawStringAt(col, lin, linebuf, fg_color, 1);
-        else renderer->DrawStringAt(col, lin, linebuf, fg_color, 1);
+        DisplayDrawStringAt(col, lin, linebuf, fg_color, 1);
       } else {
         // use disp_xpos, disp_ypos
-        if (!renderer) DisplayDrawStringAt(disp_xpos, disp_ypos, linebuf, fg_color, 0);
-        else renderer->DrawStringAt(disp_xpos, disp_ypos, linebuf, fg_color, 0);
+        DisplayDrawStringAt(disp_xpos, disp_ypos, linebuf, fg_color, 0);
       }
     }
     // draw buffer
@@ -1241,8 +1275,6 @@ extern FS *ffsp;
       //else DisplayDrawFrame();
     }
 }
-
-
 
 #ifdef USE_UFILESYS
 void Display_Text_From_File(const char *file) {
@@ -1433,17 +1465,7 @@ void DisplayDTVarsTeleperiod(void) {
 }
 
 void get_dt_mqtt(void) {
-  static uint8_t xsns_index = 0;
-
-  ResponseClear();
-  uint16_t script_tele_period_save = TasmotaGlobal.tele_period;
-  TasmotaGlobal.tele_period = 2;
-  XsnsNextCall(FUNC_JSON_APPEND, xsns_index);
-  TasmotaGlobal.tele_period = script_tele_period_save;
-  if (ResponseLength()) {
-    ResponseJsonStart();
-    ResponseJsonEnd();
-  }
+  GetNextSensor();
   get_dt_vars(ResponseData());
 }
 
@@ -1488,8 +1510,7 @@ void free_dt_vars(void) {
 
 #ifdef USE_DISPLAY_MODES1TO5
 
-void DisplayClearScreenBuffer(void)
-{
+void DisplayClearScreenBuffer(void) {
   if (disp_screen_buffer_cols) {
     for (uint32_t i = 0; i < disp_screen_buffer_rows; i++) {
       memset(disp_screen_buffer[i], 0, disp_screen_buffer_cols);
@@ -1497,8 +1518,7 @@ void DisplayClearScreenBuffer(void)
   }
 }
 
-void DisplayFreeScreenBuffer(void)
-{
+void DisplayFreeScreenBuffer(void) {
   if (disp_screen_buffer != nullptr) {
     for (uint32_t i = 0; i < disp_screen_buffer_rows; i++) {
       if (disp_screen_buffer[i] != nullptr) { free(disp_screen_buffer[i]); }
@@ -1509,14 +1529,13 @@ void DisplayFreeScreenBuffer(void)
   }
 }
 
-void DisplayAllocScreenBuffer(void)
-{
+void DisplayAllocScreenBuffer(void) {
   if (!disp_screen_buffer_cols) {
     disp_screen_buffer_rows = Settings->display_rows;
-    disp_screen_buffer = (char**)malloc(sizeof(*disp_screen_buffer) * disp_screen_buffer_rows);
+    disp_screen_buffer = (char**)calloc(sizeof(*disp_screen_buffer) * disp_screen_buffer_rows, 1);
     if (disp_screen_buffer != nullptr) {
       for (uint32_t i = 0; i < disp_screen_buffer_rows; i++) {
-        disp_screen_buffer[i] = (char*)malloc(sizeof(*disp_screen_buffer[i]) * (Settings->display_cols[0] +1));
+        disp_screen_buffer[i] = (char*)calloc(sizeof(*disp_screen_buffer[i]) * (Settings->display_cols[0] +1), 1);
         if (disp_screen_buffer[i] == nullptr) {
           DisplayFreeScreenBuffer();
           break;
@@ -1530,14 +1549,12 @@ void DisplayAllocScreenBuffer(void)
   }
 }
 
-void DisplayReAllocScreenBuffer(void)
-{
+void DisplayReAllocScreenBuffer(void) {
   DisplayFreeScreenBuffer();
   DisplayAllocScreenBuffer();
 }
 
-void DisplayFillScreen(uint32_t line)
-{
+void DisplayFillScreen(uint32_t line) {
   uint32_t len = disp_screen_buffer_cols - strlen(disp_screen_buffer[line]);
   if (len) {
     memset(disp_screen_buffer[line] + strlen(disp_screen_buffer[line]), 0x20, len);
@@ -1547,17 +1564,7 @@ void DisplayFillScreen(uint32_t line)
 
 /*-------------------------------------------------------------------------------------------*/
 
-void DisplayClearLogBuffer(void)
-{
-  if (disp_log_buffer_cols) {
-    for (uint32_t i = 0; i < DISPLAY_LOG_ROWS; i++) {
-      memset(disp_log_buffer[i], 0, disp_log_buffer_cols);
-    }
-  }
-}
-
-void DisplayFreeLogBuffer(void)
-{
+void DisplayFreeLogBuffer(void) {
   if (disp_log_buffer != nullptr) {
     for (uint32_t i = 0; i < DISPLAY_LOG_ROWS; i++) {
       if (disp_log_buffer[i] != nullptr) { free(disp_log_buffer[i]); }
@@ -1567,13 +1574,12 @@ void DisplayFreeLogBuffer(void)
   }
 }
 
-void DisplayAllocLogBuffer(void)
-{
+void DisplayAllocLogBuffer(void) {
   if (!disp_log_buffer_cols) {
-    disp_log_buffer = (char**)malloc(sizeof(*disp_log_buffer) * DISPLAY_LOG_ROWS);
+    disp_log_buffer = (char**)calloc(sizeof(*disp_log_buffer) * DISPLAY_LOG_ROWS, 1);
     if (disp_log_buffer != nullptr) {
       for (uint32_t i = 0; i < DISPLAY_LOG_ROWS; i++) {
-        disp_log_buffer[i] = (char*)malloc(sizeof(*disp_log_buffer[i]) * (Settings->display_cols[0] +1));
+        disp_log_buffer[i] = (char*)calloc(sizeof(*disp_log_buffer[i]) * (Settings->display_cols[0] +1), 1);
         if (disp_log_buffer[i] == nullptr) {
           DisplayFreeLogBuffer();
           break;
@@ -1582,44 +1588,42 @@ void DisplayAllocLogBuffer(void)
     }
     if (disp_log_buffer != nullptr) {
       disp_log_buffer_cols = Settings->display_cols[0] +1;
-      DisplayClearLogBuffer();
+      DisplayClearScreenBuffer();
+      DisplayClear();
     }
   }
 }
 
-void DisplayReAllocLogBuffer(void)
-{
+void DisplayReAllocLogBuffer(void) {
   DisplayFreeLogBuffer();
   DisplayAllocLogBuffer();
 }
 
-void DisplayLogBufferAdd(char* txt)
-{
+void DisplayLogBufferAdd(char* txt) {
   if (disp_log_buffer_cols) {
-    strlcpy(disp_log_buffer[disp_log_buffer_idx], txt, disp_log_buffer_cols);  // This preserves the % sign where printf won't
-    disp_log_buffer_idx++;
+    strlcpy(disp_log_buffer[disp_log_buffer_idx++], txt, disp_log_buffer_cols);  // This preserves the % sign where printf won't
     if (DISPLAY_LOG_ROWS == disp_log_buffer_idx) { disp_log_buffer_idx = 0; }
   }
 }
 
-char* DisplayLogBuffer(char temp_code)
-{
+char* DisplayLogBuffer(char temp_code) {
   char* result = nullptr;
   if (disp_log_buffer_cols) {
     if (disp_log_buffer_idx != disp_log_buffer_ptr) {
-      result = disp_log_buffer[disp_log_buffer_ptr];
-      disp_log_buffer_ptr++;
+      uint32_t log_buffer_ptr = disp_log_buffer_ptr;
+      result = disp_log_buffer[disp_log_buffer_ptr++];
       if (DISPLAY_LOG_ROWS == disp_log_buffer_ptr) { disp_log_buffer_ptr = 0; }
 
       char *pch = strchr(result, '~');  // = 0x7E (~) Replace degrees character (276 octal)
       if (pch != nullptr) { result[pch - result] = temp_code; }
+
+      AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("DSP: %02d %s"), log_buffer_ptr, result);
     }
   }
   return result;
 }
 
-void DisplayLogBufferInit(void)
-{
+void DisplayLogBufferInit(void) {
   if (Settings->display_mode) {
     disp_log_buffer_idx = 0;
     disp_log_buffer_ptr = 0;
@@ -1656,100 +1660,94 @@ void DisplayLogBufferInit(void)
 \*********************************************************************************************/
 
 enum SensorQuantity {
-  JSON_TEMPERATURE,
-  JSON_HUMIDITY, JSON_LIGHT, JSON_NOISE, JSON_AIRQUALITY,
+  JSON_TEMPERATURE, JSON_DEWPOINT, JSON_HEATINDEX,
   JSON_PRESSURE, JSON_PRESSUREATSEALEVEL,
+  JSON_POWERFACTOR, JSON_COUNTER, JSON_ANALOG_INPUT, JSON_UV_LEVEL,
+  JSON_HUMIDITY, JSON_LIGHT, JSON_NOISE, JSON_AIRQUALITY,
   JSON_ILLUMINANCE,
   JSON_GAS,
   JSON_YESTERDAY, JSON_TOTAL, JSON_TODAY,
   JSON_PERIOD,
-  JSON_POWERFACTOR, JSON_COUNTER, JSON_ANALOG_INPUT, JSON_UV_LEVEL,
   JSON_CURRENT,
   JSON_VOLTAGE,
   JSON_POWERUSAGE,
   JSON_CO2,
   JSON_FREQUENCY };
 const char kSensorQuantity[] PROGMEM =
-  D_JSON_TEMPERATURE "|"                                                        // degrees
-  D_JSON_HUMIDITY "|" D_JSON_LIGHT "|" D_JSON_NOISE "|" D_JSON_AIRQUALITY "|"   // percentage
+  D_JSON_TEMPERATURE "|" D_JSON_DEWPOINT "|" D_JSON_HEATINDEX "|"               // degrees
   D_JSON_PRESSURE "|" D_JSON_PRESSUREATSEALEVEL "|"                             // hPa
+  D_JSON_POWERFACTOR "|" D_JSON_COUNTER "|" D_JSON_ANALOG_INPUT "|" D_JSON_UV_LEVEL "|" // No unit
+  D_JSON_HUMIDITY "|" D_JSON_LIGHT "|" D_JSON_NOISE "|" D_JSON_AIRQUALITY "|"   // percentage
   D_JSON_ILLUMINANCE "|"                                                        // lx
   D_JSON_GAS "|"                                                                // kOhm
   D_JSON_YESTERDAY "|" D_JSON_TOTAL "|" D_JSON_TODAY "|"                        // kWh
   D_JSON_PERIOD "|"                                                             // Wh
-  D_JSON_POWERFACTOR "|" D_JSON_COUNTER "|" D_JSON_ANALOG_INPUT "|" D_JSON_UV_LEVEL "|"                 // No unit
   D_JSON_CURRENT "|"                                                            // Ampere
   D_JSON_VOLTAGE "|"                                                            // Volt
   D_JSON_POWERUSAGE "|"                                                         // Watt
   D_JSON_CO2 "|"                                                                // ppm
-  D_JSON_FREQUENCY ;                                                            // Hz
+  D_JSON_FREQUENCY;                                                             // Hz
+const char kSensorUnit[] PROGMEM =
+  "|||"                                                                         // degrees Celsius or Fahrenheit
+  "||"                                                                          // pressure hPa or mmHg
+  "||||"                                                                        // No unit
+  "%|%|%|%|"                                                                    // percentage
+  D_UNIT_LUX "|"                                                                // lx
+  D_UNIT_KILOOHM "|"                                                            // kOhm
+  D_UNIT_KILOWATTHOUR "|" D_UNIT_KILOWATTHOUR "|" D_UNIT_KILOWATTHOUR "|"       // kWh
+  D_UNIT_WATTHOUR "|"                                                           // Wh
+  D_UNIT_AMPERE "|"                                                             // A
+  D_UNIT_VOLT "|"                                                               // V
+  D_UNIT_WATT "|"                                                               // W
+  D_UNIT_PARTS_PER_MILLION "|"                                                  // ppm
+  D_UNIT_HERTZ;                                                                 // Hz
 
-void DisplayJsonValue(const char* topic, const char* device, const char* mkey, const char* value)
-{
-  char quantity[TOPSZ];
-  char buffer[Settings->display_cols[0] +1];
-  char spaces[Settings->display_cols[0]];
-  char source[Settings->display_cols[0] - Settings->display_cols[1]];
-  char svalue[Settings->display_cols[1] +1];
-
+void DisplayJsonValue(const char* topic, const char* device, const char* mkey, const char* value) {
   SHOW_FREE_MEM(PSTR("DisplayJsonValue"));
 
-  memset(spaces, 0x20, sizeof(spaces));
-  spaces[sizeof(spaces) -1] = '\0';
-  snprintf_P(source, sizeof(source), PSTR("%s%s%s%s"), topic, (strlen(topic))?"/":"", mkey, spaces);  // pow1/Voltage or Voltage if topic is empty (local sensor)
+  char temp[TOPSZ];
+  int quantity_code = GetCommandCode(temp, sizeof(temp), mkey, kSensorQuantity);
+  if ((-1 == quantity_code) || !strcmp_P(mkey, S_RSLT_POWER)) {           // Ok: Power, Not ok: POWER
+    return;                                                               // Display value not supported
+  }
 
-  int quantity_code = GetCommandCode(quantity, sizeof(quantity), mkey, kSensorQuantity);
-  if ((-1 == quantity_code) || !strcmp_P(mkey, S_RSLT_POWER)) {  // Ok: Power, Not ok: POWER
-    return;
+  char svalue[Settings->display_cols[1] +1];                              // Max sized unit string
+  if (quantity_code <= JSON_HEATINDEX) {                                  // Temperature
+    snprintf_P(svalue, sizeof(svalue), PSTR("%s~%s"), value, disp_temp);  // Used by DisplayLogBuffer replace degrees character (276 octal)
   }
-  if (JSON_TEMPERATURE == quantity_code) {
-    snprintf_P(svalue, sizeof(svalue), PSTR("%s~%s"), value, disp_temp);
+  else if (quantity_code <= JSON_PRESSUREATSEALEVEL) {                    // Pressure
+    snprintf_P(svalue, sizeof(svalue), PSTR("%s%s"), value, disp_pres);   // hPa or mmHg
   }
-  else if ((quantity_code >= JSON_HUMIDITY) && (quantity_code <= JSON_AIRQUALITY)) {
-    snprintf_P(svalue, sizeof(svalue), PSTR("%s%%"), value);
+  else {
+    snprintf_P(svalue, sizeof(svalue), PSTR("%s%s"), value, GetTextIndexed(temp, sizeof(temp), quantity_code, kSensorUnit));
   }
-  else if ((quantity_code >= JSON_PRESSURE) && (quantity_code <= JSON_PRESSUREATSEALEVEL)) {
-    snprintf_P(svalue, sizeof(svalue), PSTR("%s%s"), value, disp_pres);
+
+  char buffer[Settings->display_cols[0] +1];                              // Max sized buffer string
+  uint32_t size = strlen(topic);
+  if ((Settings->display_rows > 4) && size) {                             // Skip header if less than five rows
+    if (strcmp(topic, disp_topic)) {                                      // Show topic header only once
+      strcpy(disp_topic, topic);
+      char buffer2[Settings->display_cols[0] +1];                         // Max sized buffer string
+      memset(buffer2, '-', sizeof(buffer2));                              // Set to -
+      buffer2[sizeof(buffer2) -1] = '\0';
+      snprintf_P(buffer, sizeof(buffer), PSTR("- %s %s"), topic, buffer2);  // - pow1 -------------
+      DisplayLogBufferAdd(buffer);
+    }
+    size = 0;                                                             // Remove topic from source
   }
-  else if (JSON_ILLUMINANCE == quantity_code) {
-    snprintf_P(svalue, sizeof(svalue), PSTR("%s" D_UNIT_LUX), value);
-  }
-  else if (JSON_GAS == quantity_code) {
-    snprintf_P(svalue, sizeof(svalue), PSTR("%s" D_UNIT_KILOOHM), value);
-  }
-  else if ((quantity_code >= JSON_YESTERDAY) && (quantity_code <= JSON_TODAY)) {
-    snprintf_P(svalue, sizeof(svalue), PSTR("%s" D_UNIT_KILOWATTHOUR), value);
-  }
-  else if (JSON_PERIOD == quantity_code) {
-    snprintf_P(svalue, sizeof(svalue), PSTR("%s" D_UNIT_WATTHOUR), value);
-  }
-  else if ((quantity_code >= JSON_POWERFACTOR) && (quantity_code <= JSON_UV_LEVEL)) {
-    snprintf_P(svalue, sizeof(svalue), PSTR("%s"), value);
-  }
-  else if (JSON_CURRENT == quantity_code) {
-    snprintf_P(svalue, sizeof(svalue), PSTR("%s" D_UNIT_AMPERE), value);
-  }
-  else if (JSON_VOLTAGE == quantity_code) {
-    snprintf_P(svalue, sizeof(svalue), PSTR("%s" D_UNIT_VOLT), value);
-  }
-  else if (JSON_POWERUSAGE == quantity_code) {
-    snprintf_P(svalue, sizeof(svalue), PSTR("%s" D_UNIT_WATT), value);
-  }
-  else if (JSON_CO2 == quantity_code) {
-    snprintf_P(svalue, sizeof(svalue), PSTR("%s" D_UNIT_PARTS_PER_MILLION), value);
-  }
-  else if (JSON_FREQUENCY == quantity_code) {
-    snprintf_P(svalue, sizeof(svalue), PSTR("%s" D_UNIT_HERTZ), value);
-  }
+  memset(buffer, ' ', sizeof(buffer));                                    // Temporarily use for spaces
+  buffer[sizeof(buffer) -1] = '\0';
+  char source[Settings->display_cols[0] - Settings->display_cols[1]];     // Max sized source string
+  snprintf_P(source, sizeof(source), PSTR("%s%s%s%s"), (size)?topic:"", (size)?"/":"", mkey, buffer);  // pow1/Voltage or Voltage if topic is empty (local sensor or header)
   snprintf_P(buffer, sizeof(buffer), PSTR("%s %s"), source, svalue);
 
-//  AddLog(LOG_LEVEL_DEBUG, PSTR(D_LOG_DEBUG "mkey [%s], source [%s], value [%s], quantity_code %d, log_buffer [%s]"), mkey, source, value, quantity_code, buffer);
+//  AddLog(LOG_LEVEL_DEBUG, PSTR(D_LOG_DEBUG "topic [%s], device [%s], mkey [%s], source [%s], value [%s], quantity_code %d, log_buffer [%s]"),
+//    topic, device, mkey, source, value, quantity_code, buffer);
 
   DisplayLogBufferAdd(buffer);
 }
 
-void DisplayAnalyzeJson(char *topic, const char *json)
-{
+void DisplayAnalyzeJson(char *topic, const char *json) {
 // //tele/pow2/STATE    {"Time":"2017-09-20T11:53:03", "Uptime":10, "Vcc":3.123, "POWER":"ON", "Wifi":{"AP":2, "SSId":"indebuurt2", "RSSI":68, "APMac":"00:22:6B:FE:8E:20"}}
 // //tele/pow2/ENERGY   {"Time":"2017-09-20T11:53:03", "Total":6.522, "Yesterday":0.150, "Today":0.073, "Period":0.5, "Power":12.1, "Factor":0.56, "Voltage":210.1, "Current":0.102}
 
@@ -1804,50 +1802,136 @@ void DisplayAnalyzeJson(char *topic, const char *json)
   }
 }
 
-void DisplayMqttSubscribe(void)
-{
+void DisplayState(const char *topic, const char *json) {
+  // Impact DisplayCols1 and DisplayCols2:
+  // 12345678901234567890123456 = [DisplayCols1] 26   - Visible display columns
+  // leftitem         rightitem   [DisplayCols2] >= 3 - Display both left and rightaligned item, truncate rightaligned if total is too long
+  // leftitem             right   [DisplayCols2] 2    - Display both left and truncated rightaligned item
+  // leftitem                     [DisplayCols2] 1    - Display left item only
+  static uint32_t minute = 61; 
+
+  String jsonStr = json;                           // {"Time":"2025-08-24T14:34:59","Uptime":"0T00:05:10","UptimeSec":310,"Heap":49,...
+  JsonParser parser((char*)jsonStr.c_str());
+  JsonParserObject root = parser.getRootObject();
+  if (!root) { return; }                           // Did JSON parsing went ok?
+
+  const char *leftitem = EmptyStr;
+  const char *rightitem = EmptyStr;
+
+  if (DM_MQTT_TOPIC_UPTIME == Settings->display_mode) {
+    leftitem = topic;
+    if (Settings->display_cols[1] > 1) {           // Need space for displaying topic and uptime
+      rightitem = root.getStr(PSTR(D_JSON_UPTIME), EmptyStr);
+      if (strlen(rightitem)) {
+        if ((2 == Settings->display_cols[1]) ||
+           ((Settings->display_cols[1] > 2) && ((strlen(leftitem) + strlen(rightitem) +1) > Settings->display_cols[0]))) {
+          char *eol = (char*)rightitem + strlen(rightitem) -3;
+          *eol = '\0';                             // Remove uptime seconds
+        }
+      }
+    }
+  }
+  else if (DM_MQTT_HOSTNAME_IPADDRESS == Settings->display_mode) {
+    leftitem = root.getStr(PSTR(D_CMND_HOSTNAME), EmptyStr);
+    if (Settings->display_cols[1] > 1) {           // Need space for displaying hostname and ipaddress
+      rightitem = root.getStr(PSTR(D_CMND_IPADDRESS), EmptyStr);
+      if (strlen(rightitem)) {
+        if ((2 == Settings->display_cols[1]) ||
+           ((Settings->display_cols[1] > 2) && ((strlen(leftitem) + strlen(rightitem) +1) > Settings->display_cols[0]))) {
+          uint32_t netmask = Settings->ipv4_address[2];  // Assume WiFi netmask = Ethernet netmask
+#if defined(ESP32) && defined(USE_ETHERNET)
+          if (0 == netmask) {                      // Assume Ethernet netmask = WiFi netmask
+            netmask = Settings->eth_ipv4_address[2];
+          }
+#endif
+          if (netmask != 0) {
+            for (uint32_t i = 0; i < 3; i++) {
+              if (netmask >= 0x000000FF) {
+                rightitem = strchr(rightitem +1, '.');  // Remove network IP address octets
+              }
+              netmask >>= 8;
+            }
+          } else {
+            rightitem = strrchr(rightitem, '.');   // last IP address octet assuming netmask 255.255.255.0
+          }
+        }
+      }
+    }
+  }
+
+  if (strlen(leftitem)) {
+    char buffer[Settings->display_cols[0] +1];     // Max sized buffer string
+    if (minute != RtcTime.minute) {
+      minute = RtcTime.minute;
+      char buffer2[Settings->display_cols[0] +1];  // Max sized buffer string
+      memset(buffer2, '-', sizeof(buffer2));       // Set to -
+      buffer2[sizeof(buffer2) -1] = '\0';
+      snprintf_P(buffer, sizeof(buffer), PSTR("- %02d" D_HOUR_MINUTE_SEPARATOR "%02d %s"), RtcTime.hour, RtcTime.minute, buffer2);
+      DisplayLogBufferAdd(buffer);
+    }
+    int spaces = Settings->display_cols[0] - strlen(leftitem) - strlen(rightitem);
+    if (spaces < 1) { spaces = 1; }
+    snprintf_P(buffer, sizeof(buffer), PSTR("%s%*s%s"), leftitem, spaces, "", rightitem);
+    DisplayLogBufferAdd(buffer);
+  }
+}
+
+void DisplayMqttSubscribe(void) {
 /* Subscribe to tele messages only
  * Supports the following FullTopic formats
  * - %prefix%/%topic%
  * - home/%prefix%/%topic%
  * - home/level2/%prefix%/%topic% etc.
  */
-  if (Settings->display_model && (Settings->display_mode &0x04)) {
-
-    char stopic[TOPSZ];
-    char ntopic[TOPSZ];
-
-    ntopic[0] = '\0';
-    strlcpy(stopic, SettingsText(SET_MQTT_FULLTOPIC), sizeof(stopic));
-    char *tp = strtok(stopic, "/");
-    while (tp != nullptr) {
-      if (!strcmp_P(tp, MQTT_TOKEN_PREFIX)) {
-        break;
-      }
-      strncat_P(ntopic, PSTR("+/"), sizeof(ntopic) - strlen(ntopic) -1);           // Add single-level wildcards
-      tp = strtok(nullptr, "/");
+  char stopic[TOPSZ];
+  strlcpy(stopic, SettingsText(SET_MQTT_FULLTOPIC), sizeof(stopic));
+  char *tp = strtok(stopic, "/");
+  char ntopic[TOPSZ];
+  ntopic[0] = '\0';
+  while (tp != nullptr) {
+    if (!strcmp_P(tp, MQTT_TOKEN_PREFIX)) {
+      break;
     }
-    strncat(ntopic, SettingsText(SET_MQTTPREFIX3), sizeof(ntopic) - strlen(ntopic) -1);  // Subscribe to tele messages
-    strncat_P(ntopic, PSTR("/#"), sizeof(ntopic) - strlen(ntopic) -1);             // Add multi-level wildcard
-    MqttSubscribe(ntopic);
+    strncat_P(ntopic, PSTR("+/"), sizeof(ntopic) - strlen(ntopic) -1);           // Add single-level wildcards
+    tp = strtok(nullptr, "/");
+  }
+  strncat(ntopic, SettingsText(SET_MQTTPREFIX3), sizeof(ntopic) - strlen(ntopic) -1);  // Subscribe to tele messages
+  strncat_P(ntopic, PSTR("/#"), sizeof(ntopic) - strlen(ntopic) -1);             // Add multi-level wildcard
+  if (Settings->display_model && (Settings->display_mode >= DM_MQTT_SENSORS)) {
     disp_subscribed = true;
+    MqttSubscribe(ntopic);
   } else {
-    disp_subscribed = false;
+    if (disp_subscribed) {
+      disp_subscribed = false;
+      MqttUnsubscribe(ntopic);
+    }
   }
 }
 
-bool DisplayMqttData(void)
-{
+bool DisplayMqttData(void) {
   if (disp_subscribed) {
     char stopic[TOPSZ];
 
     snprintf_P(stopic, sizeof(stopic) , PSTR("%s/"), SettingsText(SET_MQTTPREFIX3));  // tele/
     char *tp = strstr(XdrvMailbox.topic, stopic);
     if (tp) {                                                // tele/tasmota/SENSOR
-      if (Settings->display_mode &0x04) {
-        tp = tp + strlen(stopic);                              // tasmota/SENSOR
-        char *topic = strtok(tp, "/");                         // tasmota
-        DisplayAnalyzeJson(topic, XdrvMailbox.data);
+      if (Settings->display_mode >= DM_MQTT_SENSORS) {       // 4..6
+        tp = tp + strlen(stopic);                            // tasmota/SENSOR
+        char *state = strstr_P(tp, PSTR("STATE"));
+        char *sensor = strstr_P(tp, PSTR("SENSOR"));
+        char *topic = strtok(tp, "/");                       // tasmota
+        if (topic) {
+          if ((DM_MQTT_TOPIC_UPTIME == Settings->display_mode) ||
+             (DM_MQTT_HOSTNAME_IPADDRESS == Settings->display_mode)) {
+            if (state) {
+              DisplayState(topic, XdrvMailbox.data);
+            }
+          } else {                                           // DM_MQTT_SENSORS and DM_TIME_MQTT_SENSORS
+            if (state || sensor) {
+              DisplayAnalyzeJson(topic, XdrvMailbox.data);
+            }
+          }
+        }
       }
       return true;
     }
@@ -1855,9 +1939,10 @@ bool DisplayMqttData(void)
   return false;
 }
 
-void DisplayLocalSensor(void)
-{
-  if ((Settings->display_mode &0x02) && (0 == TasmotaGlobal.tele_period)) {
+void DisplayLocalSensor(void) {
+  if (((DM_LOCAL_SENSORS == Settings->display_mode) ||
+       (DM_TIME_LOCAL_SENSORS == Settings->display_mode)) &&
+      (0 == TasmotaGlobal.tele_period)) {
     char no_topic[1] = { 0 };
 //    DisplayAnalyzeJson(TasmotaGlobal.mqtt_topic, ResponseData());  // Add local topic
     DisplayAnalyzeJson(no_topic, ResponseData());    // Discard any topic
@@ -1866,64 +1951,58 @@ void DisplayLocalSensor(void)
 
 #endif  // USE_DISPLAY_MODES1TO5
 
-
 /*********************************************************************************************\
  * Public
 \*********************************************************************************************/
 
 void DisplayInitDriver(void) {
+  uint32_t display_model = Settings->display_model;
+  Settings->display_model = 0;                     // Test if any display_model is available
   XdspCall(FUNC_DISPLAY_INIT_DRIVER);
+  if (Settings->display_model && display_model) {  // If any model found keep using user configured one for backward compatibility
+    Settings->display_model = display_model;
+  }
+  if (!Settings->display_model) { return; }
 
-//  AddLog(LOG_LEVEL_DEBUG, PSTR(D_LOG_DEBUG "Display model %d"), Settings->display_model);
+//  AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("DSP: Model %d"), Settings->display_model);
 
-  if (Settings->display_model) {
-//    ApplyDisplayDimmer();  // Not allowed here. Way too early in init sequence. Global power state has not been set at this point in time
+//  ApplyDisplayDimmer();  // Not allowed here. Way too early in init sequence. Global power state has not been set at this point in time
 
 #ifdef USE_MULTI_DISPLAY
-    Set_display(0);
+  Set_display(0);
 #endif // USE_MULTI_DISPLAY
 
-    if (renderer) {
-      renderer->setTextFont(Settings->display_font);
-      renderer->setTextSize(Settings->display_size);
-      // force opaque mode
-      renderer->setDrawMode(0);
+  if (renderer) {
+    renderer->setTextFont(Settings->display_font);
+    renderer->setTextSize(Settings->display_size);
+    // force opaque mode
+    renderer->setDrawMode(0);
 
-      for (uint32_t cnt = 0; cnt < (MAX_INDEXCOLORS - PREDEF_INDEXCOLORS); cnt++) {
-        index_colors[cnt] = 0;
-      }
+    for (uint32_t cnt = 0; cnt < (MAX_INDEXCOLORS - PREDEF_INDEXCOLORS); cnt++) {
+      index_colors[cnt] = 0;
     }
+  }
 
 #ifdef USE_DT_VARS
-    free_dt_vars();
+  free_dt_vars();
 #endif
 
 #ifdef USE_UFILESYS
-    Display_Text_From_File(DISP_BATCH_FILE);
+  Display_Text_From_File(DISP_BATCH_FILE);
 #endif
 
 #ifdef USE_GRAPH
-    for (uint8_t count = 0; count < NUM_GRAPHS; count++) { graph[count] = 0; }
+  for (uint8_t count = 0; count < NUM_GRAPHS; count++) { graph[count] = 0; }
 #endif
 
-    UpdateDevicesPresent(1);
-    if (!PinUsed(GPIO_BACKLIGHT)) {
-//      if (TasmotaGlobal.light_type && (4 == Settings->display_model)) {
-      if (TasmotaGlobal.light_type &&         // Assume PWM channel
-          ((4 == Settings->display_model) ||  // ILI9341 legacy
-           (17 == Settings->display_model))   // Universal
-         ) {
-        UpdateDevicesPresent(-1);  // Assume PWM channel is used for backlight
-      }
-    }
-    disp_device = TasmotaGlobal.devices_present;
+  UpdateDevicesPresent(1);
+  disp_device = TasmotaGlobal.devices_present;
 
 #ifndef USE_DISPLAY_MODES1TO5
-    Settings->display_mode = 0;
+  Settings->display_mode = DM_USER_CONTROL;
 #else
-    DisplayLogBufferInit();
+  DisplayLogBufferInit();
 #endif  // USE_DISPLAY_MODES1TO5
-  }
 }
 
 void DisplaySetPower(void) {
@@ -2008,22 +2087,23 @@ void CmndDisplayMode(void) {
  * 3 = Day                  Local sensors and time               Local sensors and time
  * 4 = Mqtt left and time   Mqtt (incl local) sensors            Mqtt (incl local) sensors
  * 5 = Mqtt up and time     Mqtt (incl local) sensors and time   Mqtt (incl local) sensors and time
+ * 6 = Mqtt topic           Mqtt topic                           Mqtt topic
 */
-  if ((XdrvMailbox.payload >= 0) && (XdrvMailbox.payload <= 5)) {
+  if ((XdrvMailbox.payload >= DM_USER_CONTROL) && (XdrvMailbox.payload < DM_MAX)) {
     uint32_t last_display_mode = Settings->display_mode;
     Settings->display_mode = XdrvMailbox.payload;
-
-    if (disp_subscribed != (Settings->display_mode &0x04)) {
-      TasmotaGlobal.restart_flag = 2;  // Restart to Add/Remove MQTT subscribe
-    } else {
-      if (last_display_mode && !Settings->display_mode) {  // Switch to mode 0
-        DisplayInit(DISPLAY_INIT_MODE);
-        if (renderer) renderer->fillScreen(bg_color);
-        else DisplayClear();
-      } else {
-        DisplayLogBufferInit();
+    if (last_display_mode != Settings->display_mode) {       // Switch to different mode
+      if ((!last_display_mode && Settings->display_mode) ||  // Switch to mode >0
+          (last_display_mode && !Settings->display_mode)) {  // Switch to mode 0
         DisplayInit(DISPLAY_INIT_MODE);
       }
+      if (DM_TIME == Settings->display_mode) {               // Switch to mode 1
+        DisplayClear();
+      }
+      else if (Settings->display_mode > DM_TIME) {           // Switch to mode 2 .. 6
+        DisplayLogBufferInit();
+      }
+      DisplayMqttSubscribe();
     }
   }
 #endif  // USE_DISPLAY_MODES1TO5
@@ -2031,12 +2111,12 @@ void CmndDisplayMode(void) {
 }
 
 // Apply the current display dimmer
-void ApplyDisplayDimmer(void) {
+void ApplyDisplayDimmer(uint8_t dimmer) {
   disp_apply_display_dimmer_request = true;
   if ((disp_power < 0) || !disp_device) { return; }  // Not initialized yet
   disp_apply_display_dimmer_request = false;
 
-  uint8_t dimmer8 = changeUIntScale(GetDisplayDimmer(), 0, 100, 0, 255);
+  uint8_t dimmer8 = changeUIntScale(dimmer, 0, 100, 0, 255);
   uint16_t dimmer10_gamma = ledGamma10(dimmer8);
   if (dimmer8 && !(disp_power)) {
     ExecuteCommandPower(disp_device, POWER_ON, SRC_DISPLAY);
@@ -2060,7 +2140,7 @@ void CmndDisplayDimmer(void) {
   if ((XdrvMailbox.payload >= 0) && (XdrvMailbox.payload <= 100)) {
     uint8_t dimmer = XdrvMailbox.payload;
     SetDisplayDimmer(dimmer);
-    ApplyDisplayDimmer();
+    ApplyDisplayDimmer(dimmer);
   }
   ResponseCmndNumber(GetDisplayDimmer());
 }
@@ -2068,6 +2148,7 @@ void CmndDisplayDimmer(void) {
 void CmndDisplaySize(void) {
   if ((XdrvMailbox.payload > 0) && (XdrvMailbox.payload <= TXT_MAX_SFAC)) {
     Settings->display_size = XdrvMailbox.payload;
+    DisplayClear();
     if (renderer) renderer->setTextSize(Settings->display_size);
     //else DisplaySetSize(Settings->display_size);
   }
@@ -2077,6 +2158,7 @@ void CmndDisplaySize(void) {
 void CmndDisplayFont(void) {
   if ((XdrvMailbox.payload >=0) && (XdrvMailbox.payload <= 4)) {
     Settings->display_font = XdrvMailbox.payload;
+    DisplayClear();
     if (renderer) renderer->setTextFont(Settings->display_font);
     //else DisplaySetFont(Settings->display_font);
   }
@@ -2179,17 +2261,11 @@ void CmndDisplayBatch(void) {
 
 void CmndDisplayText(void) {
   if (disp_device && XdrvMailbox.data_len > 0) {
-#ifndef USE_DISPLAY_MODES1TO5
-    DisplayText();
-#else
     if(Settings->display_model == 15 || Settings->display_model == 20) {
       XdspCall(FUNC_DISPLAY_SEVENSEG_TEXT);
-    } else if (!Settings->display_mode) {
-      DisplayText();
     } else {
-      DisplayLogBufferAdd(XdrvMailbox.data);
+      DisplayText();
     }
-#endif  // USE_DISPLAY_MODES1TO5
     ResponseCmndChar(XdrvMailbox.data);
   }
 }
@@ -2199,9 +2275,8 @@ void CmndDisplayText(void) {
 \*********************************************************************************************/
 
 void CmndDisplayClear(void) {
-  if (!renderer)
-    XdspCall(FUNC_DISPLAY_CLEAR);
-  ResponseCmndChar(XdrvMailbox.data);
+  DisplayClear();
+  ResponseCmndDone();
 }
 
 void CmndDisplayNumber(void) {
@@ -2328,7 +2403,7 @@ char ppath[16];
 #ifdef ESP32
 #ifdef JPEG_PICTS
 #include "img_converters.h"
-#include "esp_jpg_decode.h"
+#include "jpeg_decoder.h"
 bool jpg2rgb888(const uint8_t *src, size_t src_len, uint8_t * out, jpg_scale_t scale);
 bool jpg2rgb565(const uint8_t *src, size_t src_len, uint8_t * out, jpg_scale_t scale);
 char get_jpeg_size(unsigned char* data, unsigned int data_size, unsigned short *width, unsigned short *height);
@@ -2474,6 +2549,28 @@ void Draw_RGB_Bitmap(char *file, uint16_t xp, uint16_t yp, uint8_t scale, bool i
 #ifdef ESP32
 #ifdef JPEG_PICTS
 #define JPG_DEFSIZE 150000
+void Draw_jpeg(uint8_t *mem, uint16_t jpgsize, uint16_t xp, uint16_t yp, uint8_t scale) {
+  if (mem[0] == 0xff && mem[1] == 0xd8) {
+    uint16_t xsize;
+    uint16_t ysize;
+    get_jpeg_size(mem, jpgsize, &xsize, &ysize);
+    //AddLog(LOG_LEVEL_INFO, PSTR("Pict size %d - %d - %d"), xsize, ysize, jpgsize);
+    scale &= 3;
+    uint8_t fac = 1 << scale;
+    xsize /= fac;
+    ysize /= fac;
+    renderer->setAddrWindow(xp, yp, xp + xsize, yp + ysize);
+    uint8_t *rgbmem = (uint8_t *)special_malloc(xsize * ysize * 2);
+    if (rgbmem) {
+      //jpg2rgb565(mem, jpgsize, rgbmem, JPG_SCALE_NONE);
+      jpg2rgb565(mem, jpgsize, rgbmem, (jpg_scale_t)scale);
+      renderer->pushColors((uint16_t*)rgbmem, xsize * ysize, true);
+      free(rgbmem);
+    }
+    renderer->setAddrWindow(0, 0, 0, 0);
+  }
+}
+
 void Draw_JPG_from_URL(char *url, uint16_t xp, uint16_t yp, uint8_t scale) {
   uint8_t *mem = 0;
   WiFiClient http_client;
@@ -2515,28 +2612,6 @@ void Draw_JPG_from_URL(char *url, uint16_t xp, uint16_t yp, uint8_t scale) {
     Draw_jpeg(mem, jpgsize, xp, yp, scale);
   }
   if (mem) free(mem);
-}
-
-void Draw_jpeg(uint8_t *mem, uint16_t jpgsize, uint16_t xp, uint16_t yp, uint8_t scale) {
-  if (mem[0] == 0xff && mem[1] == 0xd8) {
-    uint16_t xsize;
-    uint16_t ysize;
-    get_jpeg_size(mem, jpgsize, &xsize, &ysize);
-    //AddLog(LOG_LEVEL_INFO, PSTR("Pict size %d - %d - %d"), xsize, ysize, jpgsize);
-    scale &= 3;
-    uint8_t fac = 1 << scale;
-    xsize /= fac;
-    ysize /= fac;
-    renderer->setAddrWindow(xp, yp, xp + xsize, yp + ysize);
-    uint8_t *rgbmem = (uint8_t *)special_malloc(xsize * ysize * 2);
-    if (rgbmem) {
-      //jpg2rgb565(mem, jpgsize, rgbmem, JPG_SCALE_NONE);
-      jpg2rgb565(mem, jpgsize, rgbmem, (jpg_scale_t)scale);
-      renderer->pushColors((uint16_t*)rgbmem, xsize * ysize, true);
-      free(rgbmem);
-    }
-    renderer->setAddrWindow(0, 0, 0, 0);
-  }
 }
 #endif // JPEG_PICTS
 #endif // ESP32
@@ -2943,8 +3018,7 @@ void AddValue(uint8_t num,float fval) {
  * Interface
 \*********************************************************************************************/
 
-bool Xdrv13(uint32_t function)
-{
+bool Xdrv13(uint32_t function) {
   bool result = false;
 
   if (XdspPresent()) {
@@ -2954,11 +3028,13 @@ bool Xdrv13(uint32_t function)
         break;
       case FUNC_INIT:
         if (disp_apply_display_dimmer_request) {
-          ApplyDisplayDimmer();  // Allowed here.
+          ApplyDisplayDimmer(GetDisplayDimmer());  // Allowed here.
         }
         break;
       case FUNC_EVERY_50_MSECOND:
-        if (Settings->display_model) { XdspCall(FUNC_DISPLAY_EVERY_50_MSECOND); }
+        if (Settings->display_model) { 
+          XdspCall(FUNC_DISPLAY_EVERY_50_MSECOND);
+        }
         break;
       case FUNC_SET_POWER:
         DisplaySetPower();
@@ -2966,20 +3042,27 @@ bool Xdrv13(uint32_t function)
       case FUNC_EVERY_SECOND:
 #ifdef USE_GRAPH
         DisplayCheckGraph();
-#endif
+#endif  // USE_GRAPH
 #ifdef USE_DT_VARS
         get_dt_mqtt();
         draw_dt_vars();
-#endif // USE_DT_VARS
-
+#endif  // USE_DT_VARS
 #ifdef USE_DISPLAY_MODES1TO5
-        if (Settings->display_model && Settings->display_mode) { XdspCall(FUNC_DISPLAY_EVERY_SECOND); }
-#endif
+        if (Settings->display_model && Settings->display_mode) {
+          uint32_t wait = 0;
+          if (!Settings->flag5.display_no_splash) {  // SetOption135 - (Display & LVGL) force disabling default 5 second splash screen
+            wait = 6;
+          }
+          if (TasmotaGlobal.uptime > wait) {         // Allow time to display splash screen
+            XdspCall(FUNC_DISPLAY_EVERY_SECOND);
+          }
+        }
+#endif  // USE_DISPLAY_MODES1TO5
         break;
       case FUNC_AFTER_TELEPERIOD:
 #ifdef USE_DT_VARS
         DisplayDTVarsTeleperiod();
-#endif // USE_DT_VARS
+#endif  // USE_DT_VARS
         break;
 #ifdef USE_DISPLAY_MODES1TO5
       case FUNC_MQTT_SUBSCRIBE:

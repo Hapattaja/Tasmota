@@ -52,11 +52,14 @@
 
 // Common
 #define D_ABSOLUTE_HUMIDITY "Abs Humidity"
+#define D_ADDRESS "Address"
 #define D_ADMIN "Admin"
 #define D_AIR_QUALITY "Qualitat Aire"
 #define D_AP "PA"                    // Access Point
 #define D_AS "com"
+#define D_AT "at"
 #define D_AUTO "AUTO"
+#define D_AUTO_UPDATE "Auto Update"
 #define D_BATTERY "Battery"
 #define D_BATT "Bat"                // Short for Battery
 #define D_BATTERY_CHARGE "Charge"  // Battery charge in %
@@ -87,9 +90,7 @@
 #define D_DEBUG "Depuració"
 #define D_DEWPOINT "Punt de rossada"
 #define D_DISABLED "Deshabilitat"
-#define D_MOVING_DISTANCE "Moving Distance"
-#define D_STATIC_DISTANCE "Static Distance"
-#define D_DETECT_DISTANCE "Detect Distance"
+#define D_DISCONNECTED "Disconnected"
 #define D_DISTANCE "Distancia"
 #define D_DNS_SERVER "Servidor DNS"
 #define D_DO "Oxígen dissolt"
@@ -218,6 +219,7 @@
 #define D_WEB_SERVER "Servidor Web"
 #define D_SOC "Estat de canvi"
 #define D_SOH "Estat de salut"
+#define D_WATER_DEPTH "Profunditat de l'aigua"
 
 // tasmota.ino
 #define D_WARNING_MINIMAL_VERSION "Avís : Aquesta versió no suporta configuració persistent"
@@ -371,6 +373,7 @@
 #define D_PROGRAM_VERSION "Versió del programari"
 #define D_BUILD_DATE_AND_TIME "Data i hora de construcció"
 #define D_CORE_AND_SDK_VERSION "Versió del Nucli/SDK"
+#define D_HOSTED_MCU "Hosted MCU"
 #define D_FLASH_WRITE_COUNT "Nombre d'escriptrues a la Flash"
 #define D_MAC_ADDRESS "Adreça MAC"
 #define D_MQTT_HOST "Hoste MQTT"
@@ -451,6 +454,8 @@
 #define D_DOMOTICZ_IDX "Idx"
 #define D_DOMOTICZ_KEY_IDX "Key idx"
 #define D_DOMOTICZ_SWITCH_IDX "Switch idx"
+#define D_DOMOTICZ_KEY "Key"
+#define D_DOMOTICZ_SWITCH "Switch"
 #define D_DOMOTICZ_SENSOR_IDX "Sensor idx"
   #define D_DOMOTICZ_TEMP "Temp"
   #define D_DOMOTICZ_TEMP_HUM "Temp,Hum"
@@ -572,6 +577,14 @@
 #define D_THERMOSTAT_PI_HYBRID        "PI (Hybrid)"
 #define D_THERMOSTAT_AUTOTUNE_HYBRID  "Autotune (Hybrid)"
 
+// xdrv_79_esp32_ble.ino
+#define D_CONFIGURE_BLE "Configure BLE"
+#define D_BLE_PARAMETERS "Bluetooth Settings"
+#define D_BLE_ENABLE "Enable Bluetooth"
+#define D_BLE_ACTIVESCAN "Enable Active Scan(*)"
+#define D_BLE_DEVICES "Devices Seen"
+#define D_BLE_REMARK "items marked (*) are not stored in config"
+
 // xsns_05_ds18b20.ino
 #define D_SENSOR_BUSY "Sensor busy"
 #define D_SENSOR_CRC_ERROR "Sensor CRC error"
@@ -664,6 +677,24 @@
 #define D_SIGNALSTRENGTH "Nivell del senyal"
 #define D_CHIPTEMPERATURE "Temperatura del Xip"
 
+// xsns_60_GPS
+#define D_LATITUDE             "Latitude"
+#define D_LONGITUDE            "Longitude"
+#define D_HORIZONTAL_ACCURACY  "Horizontal Accuracy"
+#define D_ALTITUDE             "Altitude"
+#define D_VERTICAL_ACCURACY    "Vertical Accuracy"
+#define D_SPEED                "Speed"
+#define D_SPEED_ACCURACY       "Speed Accuracy"
+#define D_HEADING              "Heading"
+#define D_HEADING_ACCURACY     "Heading Accuracy"
+#define D_SAT_FIX              "Satellite Fix"
+  #define D_SAT_FIX_NO_FIX     "None"
+  #define D_SAT_FIX_DEAD_RECK  "Dead reckoning"
+  #define D_SAT_FIX_2D         "2D"
+  #define D_SAT_FIX_3D         "3D"
+  #define D_SAT_FIX_GPS_DEAD   "GPS and dead reckoning"
+  #define D_SAT_FIX_TIME       "Time only fix"
+
 // tasmota_template.h - keep them as short as possible to be able to fit them in GUI drop down box
 #define D_SENSOR_NONE          "Cap"
 #define D_SENSOR_USER          "Usuari"
@@ -675,6 +706,8 @@
 #define D_SENSOR_DS18X20       "DS18x20"
 #define D_SENSOR_I2C_SCL       "I2C SCL"
 #define D_SENSOR_I2C_SDA       "I2C SDA"
+#define D_SENSOR_I2C_SER_TX    "I2C Ser TX"
+#define D_SENSOR_I2C_SER_RX    "I2C Ser RX"
 #define D_SENSOR_I2S_MCLK      "I2S MCLK"
 #define D_SENSOR_I2S_BCLK      "I2S BCLK"
 #define D_SENSOR_I2S_WS_IN     "I2S BCLK IN"
@@ -722,6 +755,13 @@
 #define D_SENSOR_SDIO_D1       "SDIO D1"
 #define D_SENSOR_SDIO_D2       "SDIO D2"
 #define D_SENSOR_SDIO_D3       "SDIO D3"
+#define D_SENSOR_HSDIO_CMD     "HSDIO CMD"
+#define D_SENSOR_HSDIO_CLK     "HSDIO CLK"
+#define D_SENSOR_HSDIO_RST     "HSDIO RST"
+#define D_SENSOR_HSDIO_D0      "HSDIO D0"
+#define D_SENSOR_HSDIO_D1      "HSDIO D1"
+#define D_SENSOR_HSDIO_D2      "HSDIO D2"
+#define D_SENSOR_HSDIO_D3      "HSDIO D3"
 #define D_SENSOR_BACKLIGHT    "Llum de fons"
 #define D_SENSOR_PMS5003_TX    "PMS5003 Tx"
 #define D_SENSOR_PMS5003_RX    "PMS5003 Rx"
@@ -749,8 +789,12 @@
 #define D_SENSOR_SDM630_RX     "SDM630 Rx"
 #define D_SENSOR_WE517_TX      "WE517 Tx"
 #define D_SENSOR_WE517_RX      "WE517 Rx"
+#define D_SENSOR_LD2402_TX     "LD2402 Tx"
+#define D_SENSOR_LD2402_RX     "LD2402 Rx"
 #define D_SENSOR_LD2410_TX     "LD2410 Tx"
 #define D_SENSOR_LD2410_RX     "LD2410 Rx"
+#define D_SENSOR_LD2410S_TX     "LD2410S Tx"
+#define D_SENSOR_LD2410S_RX     "LD2410S Rx"
 #define D_GPIO_TM1621_CS       "TM1621 CS"
 #define D_GPIO_TM1621_WR       "TM1621 WR"
 #define D_GPIO_TM1621_RD       "TM1621 RD"
@@ -760,6 +804,8 @@
 #define D_SENSOR_TM1638_CLK    "TM1638 CLK"
 #define D_SENSOR_TM1638_DIO    "TM1638 DIO"
 #define D_SENSOR_TM1638_STB    "TM1638 STB"
+#define D_SENSOR_TM1640_CLK    "TM1640 CLK"
+#define D_SENSOR_TM1640_DIN    "TM1640 DIN"
 #define D_SENSOR_MAX7219_DIN    "MAX7219 DIN"
 #define D_SENSOR_MAX7219_CS    "MAX7219 CS"
 #define D_SENSOR_MAX7219_CLK    "MAX7219 CLK"
@@ -807,6 +853,7 @@
 #define D_SENSOR_CSE7761_RX    "CSE7761 Rx"
 #define D_SENSOR_CSE7766_TX    "CSE7766 Tx"
 #define D_SENSOR_CSE7766_RX    "CSE7766 Rx"
+#define D_SENSOR_BL0906_RX     "BL0906 Rx"
 #define D_SENSOR_BL0939_RX     "BL0939 Rx"
 #define D_SENSOR_BL0942_RX     "BL0942 Rx"
 #define D_SENSOR_HM330X_SET    "HM330X SET"
@@ -895,6 +942,8 @@
 #define D_SENSOR_ADC_JOYSTICK  "ADC Joystick"
 #define D_SENSOR_ADC_PH        "ADC pH"
 #define D_SENSOR_ADC_MQ        "ADC MQ"
+#define D_SENSOR_ADC_VOLTAGE   "ADC Voltage"
+#define D_SENSOR_ADC_CURRENT   "ADC Current"
 #define D_GPIO_WEBCAM_PWDN     "CAM_PWDN"
 #define D_GPIO_WEBCAM_RESET    "CAM_RESET"
 #define D_GPIO_WEBCAM_XCLK     "CAM_XCLK"
@@ -977,11 +1026,18 @@
 #define D_SENSOR_ME007_RX      "ME007 Rx"
 #define D_SENSOR_TUYAMCUBR_TX  "TuyaMCUBr Tx"
 #define D_SENSOR_TUYAMCUBR_RX  "TuyaMCUBr Rx"
+#define D_SENSOR_TWAI_TX       "TWAI Tx"
+#define D_SENSOR_TWAI_RX       "TWAI Rx"
+#define D_SENSOR_TWAI_BO       "TWAI BusOff"
+#define D_SENSOR_TWAI_CLK      "TWAI ClkOut"
 #define D_SENSOR_BIOPDU_PZEM0XX_TX "BioPDU PZEM0XX Tx"
 #define D_SENSOR_BIOPDU_PZEM016_RX "BioPDU PZEM016 Rx"
 #define D_SENSOR_BIOPDU_BIT    "BioPDU Bit"
 #define D_SENSOR_LOX_O2_RX     "LoxO2 RX"
-#define D_GPIO_MAGIC_SWITCH "MagicSwitch"
+#define D_GPIO_MAGIC_SWITCH    "MagicSwitch"
+#define D_SENSOR_WOOLIIS_RX    "Wooliis Rx"
+#define D_SENSOR_C8_CO2_5K_RX  "C8-CO2-5K Rx"
+#define D_SENSOR_C8_CO2_5K_TX  "C8-CO2-5K Tx"
 
 // Units
 #define D_UNIT_AMPERE "A"
@@ -1006,6 +1062,7 @@
 #define D_UNIT_LITERS "L"
 #define D_UNIT_LITERS_PER_MIN "L/m"
 #define D_UNIT_LUX "lx"
+#define D_UNIT_METER "m"
 #define D_UNIT_MICROGRAM_PER_CUBIC_METER "µg/m³"
 #define D_UNIT_MICROMETER "µm"
 #define D_UNIT_MICROSECOND "µs"
@@ -1027,7 +1084,7 @@
 #define D_UNIT_SECOND "sec"
 #define D_UNIT_SECTORS "sectors"
 #define D_UNIT_VA "VA"
-#define D_UNIT_VAR "VAr"
+#define D_UNIT_VAR "var"
 #define D_UNIT_VOLT "V"
 #define D_UNIT_WATT "W"
 #define D_UNIT_WATTHOUR "Wh"
@@ -1049,7 +1106,7 @@
 #define D_IMPORT_REACTIVE "Importat Reactiva"
 #define D_EXPORT_REACTIVE "Exportat Reactiva"
 #define D_TOTAL_REACTIVE  "Total Reactiva"
-#define D_UNIT_KWARH      "kVArh"
+#define D_UNIT_KWARH      "kvarh"
 #define D_UNIT_ANGLE      "Graus"
 #define D_TOTAL_ACTIVE    "Total Activa"
 #define D_RESETTABLE_TOTAL_ACTIVE    "Total Activa (RST)"
@@ -1176,6 +1233,13 @@
 #define D_FP_PASSVERIFY "Mot de pas verificat"    // 0x21 Verify the fingerprint passed
 #define D_FP_UNKNOWNERROR "Error"              // Any other error
 
+// xsns_90_hrg15.ino
+#define D_HRG_VALID "Valid"
+#define D_HRG_ACTIVE "Active"
+#define D_HRG_EVENT "Event"
+#define D_HRG_TOTAL "Total"
+#define D_HRG_FLOWRATE "Flow Rate"
+
 // xsns_96_flowratemeter.ino
 #define D_FLOWRATEMETER_NAME "Cabal"
 #define D_FLOWRATEMETER_AMOUNT_TODAY "Amount Today"
@@ -1249,5 +1313,24 @@
 // ixrv92_pipsolar.ino
 #define D_SENSOR_PIPSOLAR_TX             "Pipsolar TX"
 #define D_SENSOR_PIPSOLAR_RX             "Pipsolar RX"
+
+// xsns_102_ld2410.ino
+#define D_MOVING_DISTANCE "Moving Distance"
+#define D_STATIC_DISTANCE "Static Distance"
+#define D_DETECT_DISTANCE "Detect Distance"
+#define D_MOVING_ENERGY_T "Moving target"
+#define D_STATIC_ENERGY_T "Static target"
+#define D_LD2410_PIN_STATE "Output pin state"
+#define D_LD2410_LIGHT "Light sensor"
+
+// xsns_115_wooliis.ino
+#define D_IMPORT                          "Import"
+#define D_EXPORT                          "Export"
+#define D_CHARGING                        "Charging"
+#define D_CAPACITY                        "Capacity"
+
+// xnrg_25_v9240.ino
+#define D_SENSOR_V9240_TX "V9240 TX"
+#define D_SENSOR_V9240_RX "V9240 RX"
 
 #endif  // _LANGUAGE_CA_AD_H_

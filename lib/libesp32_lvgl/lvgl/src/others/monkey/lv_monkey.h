@@ -24,27 +24,25 @@ extern "C" {
 /**********************
  *      TYPEDEFS
  **********************/
-struct _lv_monkey;
-typedef struct _lv_monkey lv_monkey_t;
 
-typedef struct {
-    /**< Input device type*/
+typedef struct _lv_monkey_t lv_monkey_t;
+
+struct _lv_monkey_config_t {
+    /** Input device type */
     lv_indev_type_t type;
 
-    /**< Monkey execution period*/
+    /** Monkey execution period */
     struct {
-        //! @cond Doxygen_Suppress
         uint32_t min;
         uint32_t max;
-        //! @endcond
     } period_range;
 
-    /**< The range of input value*/
+    /** The range of input value */
     struct {
         int32_t min;
         int32_t max;
     } input_range;
-} lv_monkey_config_t;
+};
 
 /**********************
  * GLOBAL PROTOTYPES

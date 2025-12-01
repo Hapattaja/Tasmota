@@ -203,6 +203,38 @@ static int read_oct(blexer *lexer, const char *src)
     return c;
 }
 
+char* be_load_unicode(char *dst, const char *src)
+{
+    int ucode = 0, i = 4;
+    while (i--) {
+        int ch = *src++;
+        if (ch >= '0' && ch <= '9') {
+            ucode = (ucode << 4) | (ch - '0');
+        } else if (ch >= 'A' && ch <= 'F') {
+            ucode = (ucode << 4) | (ch - 'A' + 0x0A);
+        } else if (ch >= 'a' && ch <= 'f') {
+            ucode = (ucode << 4) | (ch - 'a' + 0x0A);
+        } else {
+            return NULL;
+        }
+    }
+    /* convert unicode to utf8 */
+    if (ucode < 0x007F) {
+        /* unicode: 0000 - 007F -> utf8: 0xxxxxxx */
+        *dst++ = (char)(ucode & 0x7F);
+    } else if (ucode < 0x7FF) {
+        /* unicode: 0080 - 07FF -> utf8: 110xxxxx 10xxxxxx */
+        *dst++ = (char)(((ucode >> 6) & 0x1F) | 0xC0);
+        *dst++ = (char)((ucode & 0x3F) | 0x80);
+    } else {
+        /* unicode: 0800 - FFFF -> utf8: 1110xxxx 10xxxxxx 10xxxxxx */
+        *dst++ = (char)(((ucode >> 12) & 0x0F) | 0xE0);
+        *dst++ = (char)(((ucode >> 6) & 0x03F) | 0x80);
+        *dst++ = (char)((ucode & 0x3F) | 0x80);
+    }
+    return dst;
+}
+
 static void tr_string(blexer *lexer)
 {
     char *dst, *src, *end;
@@ -215,34 +247,45 @@ static void tr_string(blexer *lexer)
             be_lexerror(lexer, "unfinished string");
             break;
         case '\\':
-            switch (*src) {
-            case 'a': c = '\a'; break;
-            case 'b': c = '\b'; break;
-            case 'f': c = '\f'; break;
-            case 'n': c = '\n'; break;
-            case 'r': c = '\r'; break;
-            case 't': c = '\t'; break;
-            case 'v': c = '\v'; break;
-            case '\\': c = '\\'; break;
-            case '\'': c = '\''; break;
-            case '"': c = '"'; break;
-            case '?': c = '?'; break;
-            case 'x': c = read_hex(lexer, ++src); ++src; break;
-            default:
-                c = read_oct(lexer, src);
-                if (c != EOS) {
-                    src += 2;
+            if (*src != 'u') {
+                switch (*src) {
+                case 'a': c = '\a'; break;
+                case 'b': c = '\b'; break;
+                case 'f': c = '\f'; break;
+                case 'n': c = '\n'; break;
+                case 'r': c = '\r'; break;
+                case 't': c = '\t'; break;
+                case 'v': c = '\v'; break;
+                case '\\': c = '\\'; break;
+                case '\'': c = '\''; break;
+                case '"': c = '"'; break;
+                case '?': c = '?'; break;
+                case 'x': c = read_hex(lexer, ++src); ++src; break;
+                default:
+                    c = read_oct(lexer, src);
+                    if (c != EOS) {
+                        src += 2;
+                    }
+                    break;
                 }
-                break;
+                ++src;
+                *dst++ = (char)c;
+            } else {
+                /* unicode encoding, ex "\uF054" is equivalent to "\xEF\x81\x94"*/
+                dst = be_load_unicode(dst, src + 1);
+                src += 5;
+                if (dst == NULL) {
+                    be_lexerror(lexer, "incorrect '\\u' encoding");
+                }
             }
-            ++src;
             break;
         default:
+            *dst++ = (char)c;
             break;
         }
-        *dst++ = (char)c;
     }
-    lexer->buf.len = dst - lexbuf(lexer);
+    size_t len = dst - lexbuf(lexer);
+    lexer->buf.len = strnlen(lexbuf(lexer), len);
 }
 
 static int skip_newline(blexer *lexer)
@@ -496,9 +539,11 @@ static void scan_f_string(blexer *lexer)
                     /* if end of string is reached before '}' raise en error */
                     for (; i < buf_unparsed_fstr.len; i++) {
                         ch = buf_unparsed_fstr.s[i];
-                        if (ch == ':' || ch == '}') { break; }
-                        save_char(lexer, ch);       /* copy any character unless it's ':' or '}' */
+                        /* stop parsing if single ':' or '}' */
+                        if (ch == '}' || (ch == ':' && buf_unparsed_fstr.s[i+1] != ':')) { break; }
+                        save_char(lexer, ch);       /* copy any character unless it's '}' or single ':' */
                         if (ch == '=') { break; }   /* '=' is copied but breaks parsing as well */
+                        if (ch == ':') { save_char(lexer, ch); i++; }     /* if '::' then encode the second ':' but don't parse it again in next iteration */
                     }
                     /* safe check if we reached the end of the string */
                     if (i >= buf_unparsed_fstr.len) { be_raise(lexer->vm, "syntax_error", "'}' expected"); }
@@ -545,11 +590,17 @@ static void scan_f_string(blexer *lexer)
             save_char(lexer, ',');       /* add ',' to start next argument to `format()` */
             for (; i < buf_unparsed_fstr.len; i++) {
                 ch = buf_unparsed_fstr.s[i];
-                if (ch == '=' || ch == ':' || ch == '}') { break; }
-                save_char(lexer, ch);   /* copy expression until we reach ':', '=' or '}' */
+                if (ch == ':' && (buf_unparsed_fstr.s[i+1] == ':')) {
+                    save_char(lexer, ch);
+                    i++;                    /* skip second ':' */
+                } else if (ch == '=' || ch == ':' || ch == '}') {
+                    break;
+                } else {
+                    save_char(lexer, ch);   /* copy expression until we reach ':', '=' or '}' */
+                }
             }
             /* no need to check for end of string here, it was done already in first pass */
-            if (ch == ':' || ch == '=') {       /* if '=' or ':', skip everyting until '}' */
+            if (ch == '=' || ch == ':') {       /* if '=' or ':', skip everyting until '}' */
                 i++;
                 for (; i < buf_unparsed_fstr.len; i++) {
                     ch = buf_unparsed_fstr.s[i];

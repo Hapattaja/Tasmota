@@ -183,6 +183,7 @@ extern "C" {
     be_map_insert_int(vm, "local", Rtc.local_time);
     be_map_insert_int(vm, "restart", Rtc.restart_time);
     be_map_insert_int(vm, "timezone", Rtc.time_timezone);
+    be_map_insert_int(vm, "config_time", Settings->cfg_timestamp);
     be_pop(vm, 1);
     be_return(vm);
   }
@@ -799,7 +800,7 @@ extern "C" {
       const char *msg = be_tostring(vm, 2);
       be_pop(vm, top);  // avoid Error be_top is non zero message
 #ifdef USE_WEBSERVER
-      WSContentSend_P(PSTR("%s"), msg);
+      WSContentSendRaw_P( msg);
 #endif  // USE_WEBSERVER
       be_return_nil(vm); // Return nil when something goes wrong
     }
@@ -981,7 +982,7 @@ extern "C" {
     be_return(vm);
   }
 
-  // Berry: `arvh() -> string`
+  // Berry: `arch() -> string`
   // ESP object
   int32_t l_arch(bvm *vm);
   int32_t l_arch(bvm *vm) {
@@ -1088,8 +1089,11 @@ extern "C" {
     if (len+3 > LOGSZ) { strcat(log_data, "..."); }  // Actual data is more
     TasConsole.printf(log_data);
 #ifdef USE_SERIAL_BRIDGE
-    SerialBridgePrintf(log_data);
+    SerialBridgeWrite(log_data, strlen(log_data));
 #endif  // USE_SERIAL_BRIDGE
+#ifdef USE_TELNET
+    TelnetWrite(log_data, strlen(log_data));
+#endif  // USE_TELNET
   }
 
   void berry_log_C(const char * berry_buf, ...) {

@@ -166,7 +166,11 @@ void CrashDumpClear(void)
 // extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack, uint32_t stack_end )
 // esp_err_t IRAM_ATTR esp_backtrace_print(int depth)
 
+#if defined __has_include && __has_include("xtensa_api.h")
+#include "xtensa_api.h"
+#else
 #include "freertos/xtensa_api.h"
+#endif
 #include "esp_debug_helpers.h"
 #include "esp_cpu_utils.h"
 extern "C" {
@@ -257,7 +261,7 @@ void CrashDump(void)
   }
   ResponseJsonEnd();
 }
-#elif CONFIG_IDF_TARGET_ESP32C2 || CONFIG_IDF_TARGET_ESP32C3 || CONFIG_IDF_TARGET_ESP32C6
+#elif CONFIG_IDF_TARGET_ESP32C2 || CONFIG_IDF_TARGET_ESP32C3 || CONFIG_IDF_TARGET_ESP32C5 || CONFIG_IDF_TARGET_ESP32C6 || CONFIG_IDF_TARGET_ESP32P4
 
 extern "C" {
   // esp-idf 3.x
