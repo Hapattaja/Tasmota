@@ -9,7 +9,7 @@ SpotHinta API client for Tasmota https://spot-hinta.fi/JustNow
 
 RULE1
 ON Time#Initialized DO backlog event SpotHintaCheck ENDON
-ON event#SpotHintaCheck DO backlog SpotHintaJustNowRank {"rank":5,"price":5,"backup":[2,3,4,5,6]} ENDON
+ON event#SpotHintaCheck DO backlog SpotHintaJustNowRank {"rank":4,"price":4,"backup":[2,3,4,5]} ENDON
 ON SpotHintaJustNowRank#result>=0 DO power1 %value% ENDON
 ON SpotHintaJustNowRank#status<0 DO RuleTimer1 600 ENDON
 ON time#minute|60 DO backlog event SpotHintaCheck;RuleTimer1 60 ENDON
@@ -22,7 +22,7 @@ Backlog0 Timezone 99; TimeStd 0,0,10,1,4,120; TimeDst 0,0,3,1,3,180
 # Report immediately when heater heating state changes (PowerDelta 50%)
 PowerDelta1 50
 
-# Disable saving  power state and use after restart:
+# Disable saving power state and use after restart:
 SetOption0 0
 
 # Switch relay(s) to their last saved state:
