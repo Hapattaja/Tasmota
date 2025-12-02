@@ -211,7 +211,7 @@ int Ruuvi32_AdvertismentCallback(BLE_ESP32::ble_advertisment_t *pStruct)
   //     //    return 0;
   //     // }
 
-  BLEAdvertisedDevice *advertisedDevice = pStruct->advertisedDevice;
+  const BLEAdvertisedDevice *advertisedDevice = pStruct->advertisedDevice;
   if (!advertisedDevice->haveManufacturerData()){
     if (RuuviDebugMode > 0) {
       AddLog(LOG_LEVEL_DEBUG, PSTR("Ruuvi: No manufacturer data found."));
